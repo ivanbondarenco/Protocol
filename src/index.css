@@ -1,0 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+
+  /* CYBERPUNK (Default) */
+  --bg-void: #000000;
+  --bg-carbon: #111111;
+  --accent-neon: #00f2ff;
+  --accent-alert: #FF003C;
+}
+
+body.minimal-dark {
+  /* MINIMAL DARK */
+  --bg-void: #0A0A0A;
+  --bg-carbon: #171717;
+  --accent-neon: #FFFFFF;
+  --accent-alert: #A1A1AA;
+  /* Using Silver for alert/secondary in this mode */
+}
+
+body.minimal-holistic {
+  /* MINIMAL HOLISTIC */
+  --bg-void: #1C1917;
+  --bg-carbon: #292524;
+  --accent-neon: #86EFAC;
+  /* Sage Green */
+  --accent-alert: #FDE047;
+  /* Gold/Yellow */
+}
+
+body {
+  background-color: var(--bg-void);
+  color: white;
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

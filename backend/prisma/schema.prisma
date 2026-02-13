@@ -1,0 +1,95 @@
+// This is your Prisma schema file.
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// --- USERS & AUTH ---
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String    // Hashed
+  name      String?
+  createdAt DateTime  @default(now())
+  
+  // Protocol State
+  level     Int       @default(1)
+  points    Int       @default(0)
+  
+  // Relations
+  habits    Habit[]
+  habitLogs HabitLog[]
+  workouts  Workout[]
+  nutrition NutritionLog[]
+}
+
+// --- HABITS (Dashboard) ---
+model Habit {
+  id          String     @id @default(uuid())
+  title       String
+  category    String     // 'MINDSET', 'BODY', 'SPIRIT'
+  streak      Int        @default(0)
+  
+  // Relations
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  logs        HabitLog[]
+}
+
+model HabitLog {
+    id        String   @id @default(uuid())
+    date      DateTime // e.g. "2024-02-12T00:00:00.000Z"
+    completed Boolean  @default(true)
+    
+    habitId   String
+    habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+    
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([habitId, date]) // One log per habit per day
+}
+
+// --- WORKOUTS (Training Log) ---
+model Workout {
+  id        String   @id @default(uuid())
+  date      DateTime @default(now())
+  name      String   // "Chest Day", "Legs"
+  duration  Int?     // Minutes
+  
+  exercises Exercise[]
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Exercise {
+  id        String   @id @default(uuid())
+  name      String
+  sets      Int
+  reps      String   // "12,10,8" or "12"
+  weight    String   // "60,65,70"
+  
+  workoutId String
+  workout   Workout  @relation(fields: [workoutId], references: [id])
+}
+
+// --- NUTRITION (Fuel Station) ---
+model NutritionLog {
+  id        String   @id @default(uuid())
+  date      DateTime @default(now())
+  
+  calories  Int
+  protein   Int
+  carbs     Int
+  fats      Int
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
