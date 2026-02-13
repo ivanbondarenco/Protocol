@@ -1,73 +1,61 @@
-# React + TypeScript + Vite
+# 🌑 PROTOCOL YOURSELF
+> **La Disciplina es Libertad.** Un sistema operativo personal de alto rendimiento.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Protocol Yourself Banner](https://via.placeholder.com/1200x600/000000/00F0FF?text=PROTOCOL+YOURSELF)
 
-Currently, two official plugins are available:
+## 💀 Concepto
+**Protocol Yourself** no es solo un "tracker de hábitos"; es un centro de mando para la automaestría. Inspirado en la eficiencia despiadada de los atletas de alto rendimiento y la estética oscura de las interfaces cyberpunk.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Construido para aquellos que exigen control total sobre su Biología, Intelecto y Disciplina.
 
-## React Compiler
+## ⚡️ Módulos Clave
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 1. THE DASHBOARD (Centro de Mando)
+*   **La Matriz:** Visualización vertical tipo "mapa de calor" de la consistencia diaria.
+*   **Checklist Táctico:** 11 hábitos diarios no negociables (Combustible, Hidratación, Entreno, Estudio, No-Go, etc.).
+*   **Lógica Anti-Racha:** Visualiza los fallos en rojo para aprovechar la psicología de aversión a la pérdida.
 
-## Expanding the ESLint configuration
+### 2. FUEL STATION (Motor de Nutrición)
+*   **Matemática Calórica Dinámica:** Cálculo de TDEE (Gasto energético) en tiempo real basado en la actividad del día.
+*   **Control de Inventario:** Sugerencias inteligentes de recetas basadas estrictamente en ingredientes disponibles.
+*   **Precisión de Macros:** Barras de progreso visuales para Proteínas, Carbohidratos y Grasas.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 3. TRAINING LOG (Rendimiento Físico)
+*   **Sobrecarga Progresiva:** Rastrea y muestra automáticamente los pesos anteriores para cada ejercicio.
+*   **Modo Cardio:** Tracker integrado para sesiones de resistencia (Tiempo/Distancia/Calorías).
+*   **Analítica:** Gráficos de volumen y calificación de intensidad por sesión.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 4. THE VAULT (Intelecto y Estudio)
+*   **Biblioteca:** Seguimiento de progreso de lectura con portadas que pasan de escala de grises a color.
+*   **Knowledge Drops:** Sistema de captura rápida para ideas y conceptos clave.
+*   **Timer de Trabajo Profundo:** Temporizador de enfoque minimalista con interfaz "Modo Monje".
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🛠️ Stack Tecnológico
+*   **Frontend:** React + Vite (TypeScript)
+*   **Estilos:** Tailwind CSS + Framer Motion (para interacciones fluidas y oscuras)
+*   **Persistencia:** LocalStorage (Privacidad primero, funciona offline)
+*   **Iconos:** Lucide React
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🚀 Instalación y Setup
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+1.  **Clonar el repositorio**
+    ```bash
+    git clone https://github.com/tu-usuario/protocol-yourself.git
+    cd protocol-yourself
+    ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+2.  **Instalar dependencias**
+    ```bash
+    npm install
+    ```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+3.  **Correr servidor local**
+    ```bash
+    npm run dev
+    ```
+
+## 🏴 Licencia
+Privada y Confidencial. Construido para la evolución personal.
+
+---
+*"No nos elevamos al nivel de nuestras metas. Caemos al nivel de nuestros sistemas."*
