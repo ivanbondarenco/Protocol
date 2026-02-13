@@ -1,5 +1,5 @@
 # 🌑 PROTOCOL YOURSELF
-> **La Disciplina es Libertad.** Un sistema operativo personal de alto rendimiento.
+> **La Disciplina es Libertad.** Aplicación de alto rendimiento.
 
 ![Protocol Yourself Banner](https://via.placeholder.com/1200x600/000000/00F0FF?text=PROTOCOL+YOURSELF)
 
