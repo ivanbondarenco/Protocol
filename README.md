@@ -1,73 +1,55 @@
-# React + TypeScript + Vite
+# Protocol V4 - Personal Optimization System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 🚀 Overview
+**Protocol** is a personal tracking application designed to optimize biological and intellectual performance. It combines training logs, nutrition tracking, and a knowledge vault into a unified cyber-aesthetic interface.
 
-Currently, two official plugins are available:
+## 🌟 Features (V4)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 🏋️ Training Log
+- **Lift & Cardio Modes**: distinct tracking for weightlifting and cardio sessions.
+- **Grouped Sets**: Sets are grouped by exercise for better readability.
+- **Exercise Info**: Integrated with **ExerciseDB** (RapidAPI) to show GIFs and target muscles.
+- **History**: View last 30 days of training volume.
+- **Charts**: Volume trend visualization.
 
-## React Compiler
+### 🥗 Fuel Station
+- **Macro Tracking**: Protein, Carbs, Fats, and Calories.
+- **Smart Chef**: Generate quick recipes based on available time/ingredients.
+- **Scavenger Mode**: Find recipes based on ingredients you have (e.g., "Eggs, Rice").
+- **Hydration Tracker**: Persistent water logging.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 🧠 The Vault
+- **Library**: Manage your physical and digital book collection.
+- **Google Books Integration**: Auto-fetch book covers and metadata.
+- **Idea Spark**: Quick capture for thoughts and "Brain Dumps".
+- **Pomodoro Timer**: Integrated focus timer (25/5).
 
-## Expanding the ESLint configuration
+## 🛠️ Setup & Installation
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1.  **Clone the repository**
+2.  **Install Dependencies**:
+    ```bash
+    npm install
+    ```
+3.  **Environment Variables**:
+    Create a `.env` file in the root directory:
+    ```env
+    VITE_RAPIDAPI_KEY="YOUR_RAPIDAPI_KEY"
+    ```
+    *(Optional: If omitted, the app uses mock data for exercises)*
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+4.  **Run Locally**:
+    ```bash
+    npm run dev
+    ```
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+5.  **Build for Production**:
+    ```bash
+    npm run build
+    ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🏗️ Deployment
+Refer to `DEPLOY_GUIDE.md` for detailed instructions on deploying to a VPS (Ubuntu/Nginx).
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🌍 Localization
+Fully translated to **Spanish (ES)** and **English (EN)**. Defaults to Spanish.

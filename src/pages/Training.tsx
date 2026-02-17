@@ -1,20 +1,22 @@
 import { GlitchText } from '../components/GlitchText';
 import { NeonCard } from '../components/NeonCard';
-import { Activity, User, CreditCard, Clock } from 'lucide-react';
+import { Activity, Clock, Plus, X, Search } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useProtocolStore } from '../store/useProtocolStore';
 import { getProtocolDate } from '../lib/dateUtils';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { APP_TRANSLATIONS } from '../data/translations';
+import { getExercises, createExercise, type Exercise } from '../services/exerciseService';
 
 export const Training = () => {
-    const { addTrainingLog, trainingLogs, gymStats, updateGymStats, language } = useProtocolStore();
+    const { addTrainingLog, trainingLogs, language, removeTrainingLog } = useProtocolStore();
     const t = APP_TRANSLATIONS[language];
 
     // Input State
     const [mode, setMode] = useState<'LIFT' | 'CARDIO'>('LIFT');
-    const [exercise, setExercise] = useState('');
+    const [exercise, setExercise] = useState(''); // Text input for filtering
+    const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
     const [weight, setWeight] = useState('');
     const [reps, setReps] = useState('');
 
@@ -23,25 +25,64 @@ export const Training = () => {
     const [cardioDist, setCardioDist] = useState(''); // km
     const [cardioCals, setCardioCals] = useState('');
 
-    // Lookup State
-    const [lastHistory, setLastHistory] = useState<string | null>(null);
+    // Local Exercises State
+    const [allExercises, setAllExercises] = useState<Exercise[]>([]);
+    const [filteredExercises, setFilteredExercises] = useState<Exercise[]>([]);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-    // Stats / Bio
-    const [showBio, setShowBio] = useState(false);
+    // Add New Exercise Modal
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [newExName, setNewExName] = useState('');
+    const [newExMuscle, setNewExMuscle] = useState('');
 
     // Terminate Modal
     const [isTerminateOpen, setIsTerminateOpen] = useState(false);
-    // History Expansion
-    const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-    // Unique Exercise List for Autocomplete
-    const uniqueExercises = useMemo(() => {
-        // Extract base exercise name
-        const names = trainingLogs
-            .filter(l => l.type === 'LIFT' || !l.type)
-            .map(l => l.workout.split(' (')[0].trim());
-        return Array.from(new Set(names)).sort();
-    }, [trainingLogs]);
+    // Grouped Today's Logs
+    const today = getProtocolDate();
+    const todaysLogs = trainingLogs.filter(l => l.date === today);
+
+    // Load Exercises on Mount
+    useEffect(() => {
+        loadExercises();
+    }, []);
+
+    const loadExercises = async () => {
+        const data = await getExercises();
+        setAllExercises(data);
+    };
+
+    // Filter Logic
+    useEffect(() => {
+        if (!exercise) {
+            setFilteredExercises(allExercises);
+        } else {
+            setFilteredExercises(allExercises.filter(ex =>
+                ex.name.toLowerCase().includes(exercise.toLowerCase())
+            ));
+        }
+    }, [exercise, allExercises]);
+
+    const handleSelectExercise = (ex: Exercise) => {
+        setExercise(ex.name);
+        setSelectedExercise(ex);
+        setIsDropdownOpen(false);
+    };
+
+    const handleCreateExercise = async () => {
+        if (!newExName || !newExMuscle) return;
+        const newEx = await createExercise(newExName, newExMuscle);
+        if (newEx) {
+            await loadExercises(); // Refresh list
+            handleSelectExercise(newEx); // Select it
+            setIsAddModalOpen(false);
+            setNewExName('');
+            setNewExMuscle('');
+        } else {
+            alert('Failed to create exercise');
+        }
+    };
 
     // 1RM Calculation
     const oneRepMax = useMemo(() => {
@@ -52,18 +93,10 @@ export const Training = () => {
     }, [weight, reps]);
 
     // History Lookup
-    useEffect(() => {
-        if (!exercise || exercise.length < 3) {
-            setLastHistory(null);
-            return;
-        }
-        // Find last log with matching exercise string 
+    const lastHistory = useMemo(() => {
+        if (!exercise || exercise.length < 3) return null;
         const historyLog = trainingLogs.find(log => log.workout.toLowerCase().startsWith(exercise.toLowerCase()));
-        if (historyLog) {
-            setLastHistory(`${historyLog.volume} vol [${historyLog.workout}]`);
-        } else {
-            setLastHistory(null);
-        }
+        return historyLog ? `${historyLog.volume} vol [${historyLog.workout}]` : null;
     }, [exercise, trainingLogs]);
 
     const handleQuickSave = () => {
@@ -74,13 +107,13 @@ export const Training = () => {
             addTrainingLog({
                 id: Date.now().toString(),
                 date: getProtocolDate(),
-                workout: `${exercise} (${weight}kg x ${reps})`,
+                workout: `${exercise} (${weight}kg x ${reps})`, // Keep format
                 duration: 'Ongoing',
                 intensity: 'Medium',
                 volume: vol,
                 type: 'LIFT'
             });
-            setExercise(''); setWeight(''); setReps('');
+            setReps('');
         } else {
             if (!cardioTime || !cardioCals) return;
             addTrainingLog({
@@ -98,22 +131,31 @@ export const Training = () => {
         }
     };
 
-    const handleTerminate = (intensity: string) => {
-        setIsTerminateOpen(false);
-        alert(`SESSION TERMINATED: ${intensity}`);
-    };
-
+    // Chart Data
     const chartData = useMemo(() => {
-        const lastLogs = trainingLogs.slice(0, 7).reverse();
-        if (lastLogs.length < 2) return null;
-        const maxVol = Math.max(...lastLogs.map(l => l.volume));
-        const points = lastLogs.map((log, i) => {
-            const x = (i / (lastLogs.length - 1)) * 100;
-            const y = 100 - ((log.volume / maxVol) * 100);
+        if (trainingLogs.length === 0) return null;
+        const volByDate: Record<string, number> = {};
+        [...trainingLogs].sort((a, b) => a.date.localeCompare(b.date)).forEach(l => {
+            if (l.volume) volByDate[l.date] = (volByDate[l.date] || 0) + l.volume;
+        });
+        const dates = Object.keys(volByDate);
+        if (dates.length < 2) return "0,100 100,100"; // Flat line if not enough data
+        const vols = Object.values(volByDate);
+        const max = Math.max(...vols) || 100;
+        return dates.map((d, i) => {
+            const x = (i / (dates.length - 1)) * 100;
+            const y = 100 - ((volByDate[d] / max) * 100);
             return `${x},${y}`;
         }).join(' ');
-        return points;
     }, [trainingLogs]);
+
+    const handleTerminate = (intensity: string) => {
+        setIsTerminateOpen(false);
+        setExercise(''); setWeight(''); setReps('');
+        setCardioTime(''); setCardioDist(''); setCardioCals('');
+        setSelectedExercise(null);
+        alert(`SESSION TERMINATED: ${intensity}. REST RECOVER REPEAT.`);
+    };
 
     return (
         <div className="min-h-screen bg-voidblack pb-24 px-4 pt-8 max-w-md mx-auto relative">
@@ -122,76 +164,64 @@ export const Training = () => {
                     <GlitchText text={t.TRAINING_TITLE} className="mb-2" />
                     <p className="text-gray-400 text-sm">{t.TRAINING_SUBTITLE}</p>
                 </div>
-                <button onClick={() => setShowBio(!showBio)} className="text-gray-500 hover:text-white"><User size={20} /></button>
             </header>
 
-            {/* Bio-Metrics & Membership */}
-            <AnimatePresence>
-                {showBio && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="mb-6 overflow-hidden">
-                        <NeonCard className="p-4 border-l-4 border-l-accent-neon bg-carbonblack">
-                            <h3 className="text-xs font-bold uppercase text-accent-neon mb-4 flex gap-2 items-center"><User size={14} /> {t.BIO_METRICS}</h3>
-                            <div className="flex gap-4 mb-4">
-                                <div className="flex-1">
-                                    <label className="text-[10px] text-gray-500 block">{t.WEIGHT.toUpperCase()} (KG)</label>
-                                    <input type="number" value={gymStats.weight} onChange={e => updateGymStats({ weight: parseFloat(e.target.value) })} className="w-full bg-black/50 border border-white/10 p-2 text-white font-mono" />
-                                </div>
-                                <div className="flex-1">
-                                    <label className="text-[10px] text-gray-500 block">{t.HEIGHT.toUpperCase()} (CM)</label>
-                                    <input type="number" value={gymStats.height} onChange={e => updateGymStats({ height: parseFloat(e.target.value) })} className="w-full bg-black/50 border border-white/10 p-2 text-white font-mono" />
-                                </div>
-                            </div>
-
-                            <h3 className="text-xs font-bold uppercase text-accent-neon mb-4 flex gap-2 items-center"><CreditCard size={14} /> {t.MEMBERSHIP_TITLE}</h3>
-                            <div className="flex gap-4">
-                                <div className="flex-1">
-                                    <label className="text-[10px] text-gray-500 block">{t.LAST_PAYMENT}</label>
-                                    <input type="date" value={gymStats.lastPaymentDate} onChange={e => updateGymStats({ lastPaymentDate: e.target.value })} className="w-full bg-black/50 border border-white/10 p-2 text-white font-mono text-xs" />
-                                </div>
-                                <div className="flex-1">
-                                    <label className="text-[10px] text-gray-500 block">{t.COST}</label>
-                                    <input type="number" value={gymStats.monthlyCost} onChange={e => updateGymStats({ monthlyCost: parseFloat(e.target.value) })} className="w-full bg-black/50 border border-white/10 p-2 text-white font-mono" />
-                                </div>
-                            </div>
-                        </NeonCard>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
             {/* Input Section */}
-            <NeonCard className="mb-8">
-                {/* Mode Toggle */}
+            <NeonCard className="mb-8 relative overflow-visible z-20">
                 <div className="flex mb-4 border-b border-white/10 pb-2">
-                    <button
-                        onClick={() => setMode('LIFT')}
-                        className={`flex-1 text-xs font-bold uppercase pb-2 ${mode === 'LIFT' ? 'text-accent-neon border-b-2 border-accent-neon' : 'text-gray-500'}`}
-                    >
-                        {t.LIFT}
-                    </button>
-                    <button
-                        onClick={() => setMode('CARDIO')}
-                        className={`flex-1 text-xs font-bold uppercase pb-2 ${mode === 'CARDIO' ? 'text-accent-neon border-b-2 border-accent-neon' : 'text-gray-500'}`}
-                    >
-                        {t.CARDIO}
-                    </button>
+                    <button onClick={() => setMode('LIFT')} className={`flex-1 text-xs font-bold uppercase pb-2 ${mode === 'LIFT' ? 'text-accent-neon border-b-2 border-accent-neon' : 'text-gray-500'}`}>{t.LIFT}</button>
+                    <button onClick={() => setMode('CARDIO')} className={`flex-1 text-xs font-bold uppercase pb-2 ${mode === 'CARDIO' ? 'text-accent-neon border-b-2 border-accent-neon' : 'text-gray-500'}`}>{t.CARDIO}</button>
                 </div>
 
                 <div className="space-y-4">
                     {mode === 'LIFT' ? (
                         <>
-                            <div>
-                                <input
-                                    list="exercises"
-                                    placeholder={t.EXERCISE_PLACEHOLDER}
-                                    className="w-full bg-black/30 border border-white/10 p-2 text-white uppercase text-sm"
-                                    value={exercise} onChange={e => setExercise(e.target.value)}
-                                />
-                                <datalist id="exercises">
-                                    {uniqueExercises.map(name => <option key={name} value={name} />)}
-                                </datalist>
+                            <div className="relative">
+                                {/* Custom Dropdown / Filter input */}
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <input
+                                            placeholder="SELECT OR SEARCH EXERCISE"
+                                            className="w-full bg-black/30 border border-white/10 p-2 text-white uppercase text-sm"
+                                            value={exercise}
+                                            onChange={e => {
+                                                setExercise(e.target.value);
+                                                setIsDropdownOpen(true);
+                                                if (selectedExercise && selectedExercise.name !== e.target.value) setSelectedExercise(null);
+                                            }}
+                                            onFocus={() => setIsDropdownOpen(true)}
+                                        />
+                                        <Search className="absolute right-2 top-2 text-gray-500" size={16} />
+                                    </div>
+                                    <button
+                                        onClick={() => setIsAddModalOpen(true)}
+                                        className="bg-accent-neon/10 border border-accent-neon/30 p-2 hover:bg-accent-neon/20"
+                                    >
+                                        <Plus className="text-accent-neon" size={20} />
+                                    </button>
+                                </div>
 
-                                {lastHistory && <p className="text-[10px] text-accent-neon mt-1 ml-1 flex items-center gap-1"><Clock size={10} /> Last: {lastHistory}</p>}
+                                {isDropdownOpen && (
+                                    <ul className="absolute top-full left-0 right-12 bg-black border border-accent-neon/30 max-h-48 overflow-y-auto z-50 mt-1">
+                                        {filteredExercises.length > 0 ? (
+                                            filteredExercises.map((ex) => (
+                                                <li
+                                                    key={ex.id}
+                                                    onClick={() => handleSelectExercise(ex)}
+                                                    className="p-2 hover:bg-white/10 cursor-pointer text-xs text-gray-300 border-b border-white/5 uppercase flex justify-between"
+                                                >
+                                                    <span>{ex.name}</span>
+                                                    <span className="text-[10px] text-gray-500">{ex.muscleGroup}</span>
+                                                </li>
+                                            ))
+                                        ) : (
+                                            <li className="p-2 text-xs text-gray-500 uppercase">NO RESULT - ADD NEW</li>
+                                        )}
+                                    </ul>
+                                )}
                             </div>
+
+                            {lastHistory && <p className="text-[10px] text-accent-neon mt-1 ml-1 flex items-center gap-1"><Clock size={10} /> Last: {lastHistory}</p>}
 
                             <div className="flex gap-4">
                                 <input
@@ -218,31 +248,15 @@ export const Training = () => {
                             </div>
                         </>
                     ) : (
+                        // Cardio UI
                         <>
                             <div className="flex gap-4">
-                                <input
-                                    placeholder={t.TIME_PLACEHOLDER}
-                                    type="number"
-                                    className="w-1/2 bg-black/30 border border-white/10 p-2 text-white text-sm"
-                                    value={cardioTime} onChange={e => setCardioTime(e.target.value)}
-                                />
-                                <input
-                                    placeholder={t.DIST_PLACEHOLDER}
-                                    type="number"
-                                    className="w-1/2 bg-black/30 border border-white/10 p-2 text-white text-sm"
-                                    value={cardioDist} onChange={e => setCardioDist(e.target.value)}
-                                />
+                                <input placeholder={t.TIME_PLACEHOLDER} type="number" className="w-1/2 bg-black/30 border border-white/10 p-2 text-white text-sm" value={cardioTime} onChange={e => setCardioTime(e.target.value)} />
+                                <input placeholder={t.DIST_PLACEHOLDER} type="number" className="w-1/2 bg-black/30 border border-white/10 p-2 text-white text-sm" value={cardioDist} onChange={e => setCardioDist(e.target.value)} />
                             </div>
-                            <input
-                                placeholder={t.CALS_PLACEHOLDER}
-                                type="number"
-                                className="w-full bg-black/30 border border-white/10 p-2 text-white text-sm"
-                                value={cardioCals} onChange={e => setCardioCals(e.target.value)}
-                            />
+                            <input placeholder={t.CALS_PLACEHOLDER} type="number" className="w-full bg-black/30 border border-white/10 p-2 text-white text-sm" value={cardioCals} onChange={e => setCardioCals(e.target.value)} />
                             <div className="flex justify-end mt-4">
-                                <button onClick={handleQuickSave} className="bg-accent-neon text-black px-4 py-2 font-bold text-[10px] uppercase hover:bg-white transition-colors">
-                                    {t.LOG_CARDIO}
-                                </button>
+                                <button onClick={handleQuickSave} className="bg-accent-neon text-black px-4 py-2 font-bold text-[10px] uppercase hover:bg-white transition-colors">{t.LOG_CARDIO}</button>
                             </div>
                         </>
                     )}
@@ -263,55 +277,24 @@ export const Training = () => {
                 </div>
             </section>
 
-            {/* Log History */}
-            <section className="mb-20">
-                <h2 className="text-white text-sm font-bold uppercase mb-4 flex items-center gap-2">
-                    <Clock size={16} /> {t.LOG_HISTORY}
-                </h2>
-                <div className="space-y-2">
-                    {trainingLogs.slice(0, 5).map((log) => (
-                        <div
-                            key={log.id}
-                            onClick={() => setExpandedLogId(expandedLogId === log.id ? null : log.id)}
-                            className="bg-carbonblack border border-white/5 p-3"
-                        >
-                            <div className="flex justify-between text-[10px] uppercase items-center">
+            {/* Active Session */}
+            <section className="mb-24">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-white text-sm font-bold uppercase flex items-center gap-2"><Clock size={16} /> {t.TODAY_SESSION}</h2>
+                    <button onClick={() => setIsHistoryOpen(true)} className="text-[10px] bg-white/10 px-3 py-1 rounded text-white hover:bg-white/20 uppercase font-bold">HISTÓRICO MES</button>
+                </div>
+                <div className="space-y-4">
+                    {todaysLogs.length > 0 ? (
+                        todaysLogs.map((log) => (
+                            <NeonCard key={log.id} className="p-3 bg-carbonblack border-l-4 border-l-accent-neon flex justify-between items-center group">
                                 <div>
-                                    <span className="text-accent-neon font-bold block mb-1">{new Date(log.date).toLocaleDateString()}</span>
-                                    <span className="text-white line-clamp-1">{log.workout}</span>
+                                    <h3 className="text-white font-bold uppercase text-xs mb-1">{log.type === 'CARDIO' ? 'CARDIO' : log.workout.match(/\((.*?)\)/)?.[1] || log.workout}</h3>
+                                    <p className="text-[10px] text-gray-400 font-mono">{log.type === 'CARDIO' ? `${log.distance}km / ${log.duration}` : log.workout}</p>
                                 </div>
-                                <div className="text-right">
-                                    <span className="text-accent-neon font-bold text-[9px] block">{log.intensity}</span>
-                                    <span className="text-gray-400 font-mono block">{log.type === 'CARDIO' ? `${log.calories} kcal` : `${log.volume} vol`}</span>
-                                    <span className={`text-[9px] ${log.type === 'CARDIO' ? 'text-blue-400' : 'text-gray-600'}`}>{log.type || 'LIFT'}</span>
-                                </div>
-                            </div>
-
-                            {/* Detailed View */}
-                            <AnimatePresence>
-                                {expandedLogId === log.id && (
-                                    <motion.div
-                                        initial={{ height: 0, opacity: 0 }}
-                                        animate={{ height: 'auto', opacity: 1 }}
-                                        exit={{ height: 0, opacity: 0 }}
-                                        className="overflow-hidden mt-2 pt-2 border-t border-white/5"
-                                    >
-                                        <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-500">
-                                            <div>INTENSITY: <span className="text-white">{log.intensity}</span></div>
-                                            <div>DURATION: <span className="text-white">{log.duration}</span></div>
-                                            {log.type === 'CARDIO' && (
-                                                <>
-                                                    <div>DIST: <span className="text-white">{log.distance} km</span></div>
-                                                    <div>CALS: <span className="text-white">{log.calories}</span></div>
-                                                </>
-                                            )}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    ))}
-                    {trainingLogs.length === 0 && <p className="text-xs text-gray-500 text-center py-4">{t.NO_LOGS}</p>}
+                                <button onClick={() => { const globalIndex = trainingLogs.findIndex(l => l.id === log.id); if (globalIndex !== -1) removeTrainingLog(globalIndex); }} className="p-2 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><X size={14} /></button>
+                            </NeonCard>
+                        ))
+                    ) : <p className="text-xs text-gray-500 text-center py-4">{t.NO_LOGS}</p>}
                 </div>
             </section>
 
@@ -322,6 +305,26 @@ export const Training = () => {
                 </button>
             </div>
 
+            {/* Create Exercise Modal */}
+            <AnimatePresence>
+                {isAddModalOpen && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-6 text-center">
+                        <div className="w-full max-w-sm bg-carbonblack border border-accent-neon p-6 relative">
+                            <h3 className="text-accent-neon font-bold uppercase mb-4">ADD NEW EXERCISE</h3>
+                            <input placeholder="EXERCISE NAME" className="w-full bg-black/50 border border-white/10 p-2 text-white mb-2 text-xs uppercase" value={newExName} onChange={e => setNewExName(e.target.value)} />
+                            <select className="w-full bg-black/50 border border-white/10 p-2 text-white mb-4 text-xs uppercase" value={newExMuscle} onChange={e => setNewExMuscle(e.target.value)}>
+                                <option value="">SELECT MUSCLE GROUP</option>
+                                {['CHEST', 'BACK', 'LEGS', 'SHOULDERS', 'ARMS', 'ABS', 'CARDIO', 'OTHER'].map(m => <option key={m} value={m}>{m}</option>)}
+                            </select>
+                            <div className="flex gap-2">
+                                <button onClick={() => setIsAddModalOpen(false)} className="flex-1 bg-gray-800 text-white py-2 text-xs uppercase font-bold">CANCEL</button>
+                                <button onClick={handleCreateExercise} className="flex-1 bg-accent-neon text-black py-2 text-xs uppercase font-bold">SAVE</button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Terminate Modal */}
             <AnimatePresence>
                 {isTerminateOpen && (
@@ -331,16 +334,37 @@ export const Training = () => {
                             <p className="text-xs text-gray-400 mb-6 uppercase tracking-widest">{t.RATE_INTENSITY}</p>
                             <div className="grid gap-3">
                                 {['WEAK', 'MAINTENANCE', 'WAR', 'DOMINATED'].map((rate, i) => (
-                                    <button
-                                        key={rate}
-                                        onClick={() => handleTerminate(rate)}
-                                        className={`w-full py-4 border border-white/10 uppercase font-bold text-sm tracking-widest hover:bg-accent-neon hover:text-black hover:border-accent-neon transition-all ${i === 3 ? 'text-accent-neon' : 'text-gray-400'}`}
-                                    >
-                                        {rate}
-                                    </button>
+                                    <button key={rate} onClick={() => handleTerminate(rate)} className={`w-full py-4 border border-white/10 uppercase font-bold text-sm tracking-widest hover:bg-accent-neon hover:text-black hover:border-accent-neon transition-all ${i === 3 ? 'text-accent-neon' : 'text-gray-400'}`}>{rate}</button>
                                 ))}
                             </div>
                             <button onClick={() => setIsTerminateOpen(false)} className="mt-8 text-xs text-gray-600 underline uppercase">{t.CANCEL}</button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* History Modal */}
+            <AnimatePresence>
+                {isHistoryOpen && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 z-50 p-6 overflow-y-auto">
+                        <div className="flex justify-between mb-6">
+                            <h3 className="text-accent-neon font-bold uppercase">HISTORY (30 DAYS)</h3>
+                            <button onClick={() => setIsHistoryOpen(false)}><X className="text-gray-500 hover:text-white" /></button>
+                        </div>
+                        <div className="space-y-6">
+                            {Array.from(new Set(trainingLogs.map(l => l.date))).slice(0, 30).map(date => (
+                                <div key={date}>
+                                    <h4 className="text-white text-xs font-bold bg-white/10 px-2 py-1 mb-2 inline-block rounded">{new Date(date).toLocaleDateString()}</h4>
+                                    <div className="space-y-2 pl-2 border-l border-white/10">
+                                        {trainingLogs.filter(l => l.date === date).map(log => (
+                                            <div key={log.id} className="text-[10px] text-gray-400 flex justify-between">
+                                                <span>{log.workout}</span>
+                                                <span className="text-accent-neon">{log.volume} vol</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </motion.div>
                 )}

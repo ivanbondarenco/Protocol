@@ -1,5 +1,5 @@
 import { GlitchText } from '../components/GlitchText';
-import { Droplets, Flame, Plus, X, Zap, ChefHat, Search, Settings, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Droplets, Flame, Plus, X, ChefHat, Search, Settings, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { NeonCard } from '../components/NeonCard';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -193,24 +193,7 @@ export const Fuel = () => {
                     </div>
                 </div>
 
-                {/* Quick Actions */}
-                <div className="grid grid-cols-3 gap-2 mt-6 px-4" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => logNutrition({ calories: 120, protein: 25 })} className="bg-white/5 hover:bg-white/10 border border-white/10 p-2 rounded flex flex-col items-center gap-1 transition-colors group">
-                        <Zap size={14} className="text-yellow-400 group-hover:scale-110 transition-transform" />
-                        <span className="text-[10px] font-bold text-gray-300">{t.SHAKE_BTN}</span>
-                        <span className="text-[9px] text-gray-500">120kcal</span>
-                    </button>
-                    <button onClick={() => logNutrition({ calories: 500, protein: 30, carbs: 50, fats: 20 })} className="bg-white/5 hover:bg-white/10 border border-white/10 p-2 rounded flex flex-col items-center gap-1 transition-colors group">
-                        <Flame size={14} className="text-accent-alert group-hover:scale-110 transition-transform" />
-                        <span className="text-[10px] font-bold text-gray-300">{t.MEAL_BTN}</span>
-                        <span className="text-[9px] text-gray-500">500kcal</span>
-                    </button>
-                    <button onClick={() => logNutrition({ calories: 200, carbs: 20 })} className="bg-white/5 hover:bg-white/10 border border-white/10 p-2 rounded flex flex-col items-center gap-1 transition-colors group">
-                        <div className="w-3 h-3 rounded-full bg-green-500 group-hover:scale-110 transition-transform" />
-                        <span className="text-[10px] font-bold text-gray-300">{t.SNACK_BTN}</span>
-                        <span className="text-[9px] text-gray-500">200kcal</span>
-                    </button>
-                </div>
+                {/* Quick Actions Removed for V4 Precision */}
             </NeonCard>
 
             {/* Macros - Collapsible */}
@@ -244,8 +227,8 @@ export const Fuel = () => {
                 <NeonCard className="p-4 cursor-pointer hover:bg-white/5 transition-colors" onClick={generateSmartFuel}>
                     <div className="flex flex-col items-center text-center gap-2">
                         <ChefHat className="text-accent-neon" size={24} />
-                        <span className="text-xs font-bold text-white">SMART CHEF</span>
-                        <span className="text-[10px] text-gray-500">GENERATE FUEL PLAN</span>
+                        <span className="text-xs font-bold text-white">{t.SMART_CHEF}</span>
+                        <span className="text-[10px] text-gray-500">{t.GENERATE_FUEL}</span>
                     </div>
                 </NeonCard>
 
@@ -253,12 +236,12 @@ export const Fuel = () => {
                     <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2 mb-1">
                             <Search className="text-blue-400" size={16} />
-                            <span className="text-xs font-bold text-white">SCAVENGER</span>
+                            <span className="text-xs font-bold text-white">{t.SCAVENGER}</span>
                         </div>
                         <input
                             type="text"
                             className="bg-black/50 border border-white/10 text-[10px] text-white p-2 rounded outline-none focus:border-blue-400 w-full"
-                            placeholder="Inventory (e.g. Eggs)..."
+                            placeholder={t.SCAVENGER_PLACEHOLDER}
                             value={scavengerInput}
                             onChange={(e) => setScavengerInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleScavengerSearch(false)}
@@ -534,34 +517,7 @@ export const Fuel = () => {
                             </div>
 
                             <div className="space-y-4">
-                                <div>
-                                    <label className="block text-xs text-gray-400 uppercase mb-1">Age</label>
-                                    <input type="number" value={bioData.age} onChange={e => updateBioData({ age: parseInt(e.target.value) })} className="w-full bg-black/50 border border-white/10 p-2 text-white outline-none focus:border-accent-neon" />
-                                </div>
-                                <div className="flex gap-4">
-                                    <div className="flex-1">
-                                        <label className="block text-xs text-gray-400 uppercase mb-1">Height (cm)</label>
-                                        <input type="number" value={bioData.height} onChange={e => updateBioData({ height: parseInt(e.target.value) })} className="w-full bg-black/50 border border-white/10 p-2 text-white outline-none focus:border-accent-neon" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <label className="block text-xs text-gray-400 uppercase mb-1">Weight (kg)</label>
-                                        <input type="number" value={bioData.weight} onChange={e => updateBioData({ weight: parseInt(e.target.value) })} className="w-full bg-black/50 border border-white/10 p-2 text-white outline-none focus:border-accent-neon" />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs text-gray-400 uppercase mb-1">Activity Level ({bioData.activity})</label>
-                                    <input
-                                        type="range" min="1.2" max="1.9" step="0.1"
-                                        value={bioData.activity}
-                                        onChange={e => updateBioData({ activity: parseFloat(e.target.value) })}
-                                        className="w-full accent-accent-neon"
-                                    />
-                                    <div className="flex justify-between text-[9px] text-gray-600 mt-1">
-                                        <span>SEDENTARY</span>
-                                        <span>ATHLETE</span>
-                                    </div>
-                                </div>
+                                {/* Personal stats moved to Dashboard */}
 
                                 <div>
                                     <label className="block text-xs text-gray-400 uppercase mb-1">Objective</label>

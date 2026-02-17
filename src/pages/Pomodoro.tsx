@@ -4,33 +4,43 @@ import { Play, Pause, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Pomodoro = () => {
-    const [timeLeft, setTimeLeft] = useState(25 * 60);
-    const [isActive, setIsActive] = useState(false);
-    const [mode, setMode] = useState<'FOCUS' | 'REST'>('FOCUS');
+    // Lazy Init State
+    const [timeLeft, setTimeLeft] = useState(() => {
+        const savedTarget = localStorage.getItem('pomodoroTarget');
+        const savedMode = localStorage.getItem('pomodoroMode');
+        if (savedTarget && savedMode) {
+            const targetTime = parseInt(savedTarget, 10);
+            const now = Date.now();
+            if (targetTime > now) return Math.ceil((targetTime - now) / 1000);
+        }
+        return 25 * 60;
+    });
+
+    const [isActive, setIsActive] = useState(() => {
+        const savedTarget = localStorage.getItem('pomodoroTarget');
+        return !!savedTarget && parseInt(savedTarget, 10) > Date.now();
+    });
+
+    const [mode, setMode] = useState<'FOCUS' | 'REST'>(() => {
+        const savedTarget = localStorage.getItem('pomodoroTarget');
+        const savedMode = (localStorage.getItem('pomodoroMode') as 'FOCUS' | 'REST') || 'FOCUS';
+
+        if (savedTarget && parseInt(savedTarget, 10) <= Date.now()) {
+            // Expired while away -> Flip Mode
+            return savedMode === 'FOCUS' ? 'REST' : 'FOCUS';
+        }
+        return savedMode;
+    });
 
     // Wake Lock Ref
     const wakeLock = useRef<any>(null);
 
-    // Load state from localStorage on mount
+    // Effect to handle expiration while away (cleanup only)
     useEffect(() => {
         const savedTarget = localStorage.getItem('pomodoroTarget');
-        const savedMode = localStorage.getItem('pomodoroMode') as 'FOCUS' | 'REST';
-
-        if (savedTarget && savedMode) {
-            const targetTime = parseInt(savedTarget, 10);
-            const now = Date.now();
-
-            if (targetTime > now) {
-                setMode(savedMode);
-                setTimeLeft(Math.ceil((targetTime - now) / 1000));
-                setIsActive(true);
-            } else {
-                // Timer finished while away
-                localStorage.removeItem('pomodoroTarget');
-                setMode(savedMode === 'FOCUS' ? 'REST' : 'FOCUS');
-                setTimeLeft(savedMode === 'FOCUS' ? 5 * 60 : 25 * 60);
-                setIsActive(false);
-            }
+        if (savedTarget && parseInt(savedTarget, 10) <= Date.now()) {
+            localStorage.removeItem('pomodoroTarget');
+            // State is already set correctly by lazy init
         }
     }, []);
 
@@ -63,7 +73,7 @@ export const Pomodoro = () => {
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
 
-        if (isActive && timeLeft > 0) {
+        if (isActive) {
             interval = setInterval(() => {
                 setTimeLeft((time) => {
                     const newTime = time - 1;
@@ -71,7 +81,6 @@ export const Pomodoro = () => {
                         clearInterval(interval);
                         setIsActive(false);
                         localStorage.removeItem('pomodoroTarget');
-                        // Sound or notif could go here
                         return 0;
                     }
                     return newTime;

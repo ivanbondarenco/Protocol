@@ -261,6 +261,122 @@ app.get('/api/nutrition', authenticateToken, async (_req, res) => {
     res.json({ message: "Nutrition Endpoint (Protected)" });
 });
 
+// --- PROXY ENDPOINTS ---
+
+// --- LOCAL CRUD ENDPOINTS ---
+
+// 1. EXERCISES (Catalog)
+app.get('/api/exercises', async (_req: Request, res: Response) => {
+    try {
+        const exercises = await prisma.exercise.findMany({
+            orderBy: { name: 'asc' }
+        });
+        res.json(exercises);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch exercises" });
+    }
+});
+
+app.post('/api/exercises', async (req: Request, res: Response) => {
+    try {
+        const { name, muscleGroup } = req.body;
+        if (!name || !muscleGroup) {
+            res.status(400).json({ error: "Name and muscleGroup are required" });
+            return;
+        }
+        const exercise = await prisma.exercise.create({
+            data: { name, muscleGroup }
+        });
+        res.json(exercise);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to create exercise" });
+    }
+});
+
+// 2. RECIPES
+// 2. RECIPES
+app.get('/api/recipes', async (req: Request, res: Response) => {
+    try {
+        const q = req.query.q as string | undefined;
+        const where = q ? {
+            OR: [
+                { name: { contains: q } },
+                { ingredients: { contains: q } }
+            ]
+        } : {};
+
+        const recipes = await prisma.recipe.findMany({
+            where: where as any // Cast to any to bypass potential type mismatch if client generation failed
+        });
+        res.json(recipes);
+    } catch (error) {
+        console.error("Recipe Fetch Error:", error);
+        res.status(500).json({ error: "Failed to fetch recipes" });
+    }
+});
+
+// 3. BOOKS (Vault)
+app.get('/api/books', async (_req: Request, res: Response) => {
+    try {
+        const books = await prisma.book.findMany({
+            orderBy: { title: 'asc' }
+        });
+        res.json(books);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch books" });
+    }
+});
+
+app.post('/api/books', async (req: Request, res: Response) => {
+    try {
+        const { title, author, pages, coverUrl } = req.body;
+        if (!title || !author || !pages) {
+            res.status(400).json({ error: "Title, author, and pages are required" });
+            return;
+        }
+        const book = await prisma.book.create({
+            data: {
+                title,
+                author,
+                pages: parseInt(pages),
+                coverUrl
+            }
+        });
+        res.json(book);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to create book" });
+    }
+});
+
+// 4. LINK VAULT
+app.get('/api/links', async (_req: Request, res: Response) => {
+    try {
+        const links = await prisma.linkVault.findMany({
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(links);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch links" });
+    }
+});
+
+app.post('/api/links', async (req: Request, res: Response) => {
+    try {
+        const { platform, url, notes } = req.body;
+        if (!platform || !url) {
+            res.status(400).json({ error: "Platform and URL are required" });
+            return;
+        }
+        const link = await prisma.linkVault.create({
+            data: { platform, url, notes }
+        });
+        res.json(link);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to create link" });
+    }
+});
+
+
 app.listen(port, () => {
     console.log(`[server]: Server is running at http://localhost:${port}`);
 });

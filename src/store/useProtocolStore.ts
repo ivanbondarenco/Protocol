@@ -22,6 +22,7 @@ export const useProtocolStore = create<ProtocolState>()(
             gymStats: { weight: 0, height: 0, monthlyCost: 0, lastPaymentDate: '2024-01-01' },
             books: [],
             insights: [],
+            lastLoginDate: '',
             theme: 'CYBERPUNK',
             language: 'EN', // Default
             currentDay: getProtocolDate(),
@@ -336,7 +337,7 @@ export const useProtocolStore = create<ProtocolState>()(
             })),
             // AI Nutritionist State
             bioData: {
-                age: 25, height: 175, weight: 75, activity: 1.2, goal: 'MAINTAIN', type: 'BALANCED'
+                age: 25, height: 175, weight: 75, activity: 1.2, goal: 'MAINTAIN', type: 'BALANCED', avatar: ''
             },
             macroTargets: { protein: 200, carbs: 250, fats: 70, calories: 2800 },
 
@@ -346,7 +347,7 @@ export const useProtocolStore = create<ProtocolState>()(
                 const { age, height, weight, activity, goal, type } = state.bioData;
 
                 // Mifflin-St Jeor (Male Default)
-                let bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+                const bmr = 10 * weight + 6.25 * height - 5 * age + 5;
                 let tdee = bmr * activity;
 
                 // Goal Adjustment
@@ -389,9 +390,58 @@ export const useProtocolStore = create<ProtocolState>()(
                     }
                 };
             }),
+            checkDailyReset: () => {
+                const today = getProtocolDate();
+                const last = get().lastLoginDate;
+
+                if (last !== today) {
+                    set({ lastLoginDate: today });
+                    // Since we use date-keyed history, the new day automatically starts fresh.
+                    // But if we had persistent "current session" state, we'd clear it here.
+                    // For now, just updating the date ensures we are on the new key.
+                }
+            },
+
+            removeTrainingLog: (index: number) => {
+                set((state) => {
+                    const logToRemove = state.trainingLogs[index];
+                    if (!logToRemove) return state;
+
+                    const newLogs = [...state.trainingLogs];
+                    newLogs.splice(index, 1);
+
+                    // Also remove from daily stats if it was today (approximate rollback)
+                    // This is tricky if headers don't match exactly, but let's try to deduct calories
+                    const today = getProtocolDate();
+                    const currentLog = state.history[today];
+
+                    if (currentLog) {
+                        let burnDeduction = 0;
+                        if (logToRemove.type === 'LIFT') {
+                            burnDeduction = (parseInt(logToRemove.duration) || 0) * (parseInt(logToRemove.intensity) || 5) * 0.6;
+                        } else {
+                            const factor = logToRemove.workout.toUpperCase().includes('RUN') ? 10 : 4;
+                            burnDeduction = (parseInt(logToRemove.duration) || 0) * factor;
+                        }
+
+                        const newCalories = Math.max(0, (currentLog.caloriesBurned || 0) - Math.round(burnDeduction));
+
+                        return {
+                            trainingLogs: newLogs,
+                            history: {
+                                ...state.history,
+                                [today]: { ...currentLog, caloriesBurned: newCalories }
+                            }
+                        };
+                    }
+
+                    return { trainingLogs: newLogs };
+                });
+            },
+
         }),
         {
-            name: 'protocol-storage-v4', // Version bump
+            name: 'protocol-storage-v5',
             storage: createJSONStorage(() => localStorage),
         }
     )

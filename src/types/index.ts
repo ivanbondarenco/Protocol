@@ -68,12 +68,15 @@ export interface ProtocolState {
     gymStats: GymStats;
     books: Book[];
     insights: Insight[];
+    lastLoginDate: string;
     theme: 'CYBERPUNK' | 'MINIMAL_DARK' | 'MINIMAL_HOLISTIC';
 
     // Computed / Refs
     currentDay: string;
 
     // Actions
+    checkDailyReset: () => void;
+    removeTrainingLog: (index: number) => void;
     syncHabits: () => Promise<void>;
     addHabit: (habit: Habit) => Promise<void>;
     removeHabit: (id: string) => Promise<void>;
@@ -103,6 +106,7 @@ export interface ProtocolState {
         activity: number; // 1.2 to 1.9
         goal: 'CUT' | 'MAINTAIN' | 'BULK';
         type: 'BALANCED' | 'LOW_CARB' | 'KETO' | 'HIGH_PROTEIN';
+        avatar?: string;
     };
     macroTargets: {
         protein: number;

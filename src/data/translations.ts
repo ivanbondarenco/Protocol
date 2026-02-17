@@ -105,6 +105,7 @@ export const APP_TRANSLATIONS = {
         LOG_CARDIO: "LOG CARDIO",
         VOLUME_TREND: "Volume Trend",
         LOG_HISTORY: "Log History",
+        TODAY_SESSION: "TODAY'S SESSION",
         NO_LOGS: "NO LOGS AVAILABLE",
         TERMINATE_SESSION: "TERMINATE SESSION",
         SESSION_COMPLETE: "SESSION COMPLETE",
@@ -144,7 +145,9 @@ export const APP_TRANSLATIONS = {
         SAVE_MANUAL: "Save Manual Entry",
         EXTRACT_INTEL: "Extract Intel",
         INSIGHT_PLACEHOLDER: "Record key insight...",
-        SAVE_DATA: "Save Data"
+        SAVE_DATA: "Save Data",
+        IDEA_SPARK: "IDEA SPARK",
+        NO_BOOKS: "NO BOOKS DETECTED"
     },
     ES: {
         // Navigation
@@ -157,18 +160,17 @@ export const APP_TRANSLATIONS = {
         DASHBOARD_TITLE: "PROTOCOL",
         DAY: "DÍA",
         COMMIT: "COMMIT",
-        MEMBERSHIP_EXPIRED: "MEMBERSHIP EXPIRED",
+        MEMBERSHIP_EXPIRED: "CUOTA DE GYM VENCIDA", // V4 Update
         PAY_DEBT: "PAGAR DEUDA INMEDIATAMENTE",
-        DAILY_PROGRESS: "DAILY PROGRESS",
+        DAILY_PROGRESS: "PROGRESO DIARIO", // V4 Update
         ADD_PROTOCOL: "AÑADIR PROTOCOLO",
-        NEW_PROTOCOL: "New Protocol",
+        NEW_PROTOCOL: "Nuevo Protocolo",
         TITLE_LABEL: "Título",
         CATEGORY_LABEL: "Categoría",
-        // INIT_PROTOCOL removed (duplicate)
-        SYSTEM_APPEARANCE: "SYSTEM APPEARANCE",
-        PROTOCOL_COMPLETE: "PROTOCOL COMPLETE",
-        SETTINGS: "SETTINGS",
-        LANGUAGE: "LANGUAGE",
+        SYSTEM_APPEARANCE: "APARIENCIA DEL SISTEMA",
+        PROTOCOL_COMPLETE: "PROTOCOLO COMPLETADO",
+        SETTINGS: "CONFIGURACIÓN",
+        LANGUAGE: "IDIOMA",
         DELETE_CONFIRM: "¿BORRAR PROTOCOLO PERMANENTEMENTE?",
         LOGOUT: "CERRAR SESIÓN",
         // Auth
@@ -195,20 +197,20 @@ export const APP_TRANSLATIONS = {
         BASE: "Base",
         BURNED_LABEL: "Quemadas",
         EATEN: "Ingeridas",
-        MACROS_TITLE: "MACRONUTRIENTS",
+        MACROS_TITLE: "MACRONUTRIENTES",
         PROTEIN: "Proteína",
         CARBS: "Carbos",
         FATS: "Grasas",
-        HYDRATION_TITLE: "HYDRATION",
-        SMART_CHEF: "SMART CHEF",
-        GENERATE_FUEL: "GENERAR PLAN DE COMBUSTIBLE",
-        SCAVENGER: "COOK WITH...",
+        HYDRATION_TITLE: "HIDRATACIÓN", // V4 Update
+        SMART_CHEF: "RECETA RÁPIDA", // V4 Update
+        GENERATE_FUEL: "GENERAR PLAN",
+        SCAVENGER: "INGREDIENTES", // V4 Update
         SCAVENGER_PLACEHOLDER: "Inventario (ej. Huevos)...",
         FOUND_RECIPES: "RECETAS ENCONTRADAS",
         LOG_FUEL: "REGISTRAR COMBUSTIBLE",
         MANUAL_INPUT: "ENTRADA MANUAL",
         ADD_BTN: "AÑADIR",
-        BIO_CALIBRATION: "BIO-CALIBRATION",
+        BIO_CALIBRATION: "CALIBRACIÓN BIO",
         CALIBRATE_SYSTEM: "CALIBRAR SISTEMA",
         AGE: "Edad",
         HEIGHT: "Altura",
@@ -251,12 +253,18 @@ export const APP_TRANSLATIONS = {
         LOG_SET: "REGISTRAR SERIE",
         LOG_CARDIO: "REGISTRAR CARDIO",
         VOLUME_TREND: "Tendencia de Volumen",
-        LOG_HISTORY: "Historial de Registros",
+        LOG_HISTORY: "HISTORIAL RECIENTE",
+        TODAY_SESSION: "SESIÓN DE HOY",
         NO_LOGS: "SIN REGISTROS DISPONIBLES",
         TERMINATE_SESSION: "TERMINAR SESIÓN",
         SESSION_COMPLETE: "SESIÓN COMPLETADA",
         RATE_INTENSITY: "Calificar Intensidad",
         CANCEL: "Cancelar",
+        // Training Ratings V4
+        RATING_WEAK: "DÉBIL",
+        RATING_MAINTENANCE: "MANTENIMIENTO (MEH)",
+        RATING_INTENSE: "INTENSO",
+        RATING_DOMINATED: "TOTAL FOCUS",
 
         // Vault
         VAULT_TITLE: "THE VAULT",
@@ -291,6 +299,8 @@ export const APP_TRANSLATIONS = {
         SAVE_MANUAL: "Guardar Entrada Manual",
         EXTRACT_INTEL: "Extraer Información",
         INSIGHT_PLACEHOLDER: "Registrar insight clave...",
-        SAVE_DATA: "Guardar Datos"
+        SAVE_DATA: "Guardar Datos",
+        IDEA_SPARK: "CHISPA DE IDEA",
+        NO_BOOKS: "NO SE DETECTAN LIBROS"
     }
 };

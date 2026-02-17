@@ -63,21 +63,26 @@ model Workout {
   name      String   // "Chest Day", "Legs"
   duration  Int?     // Minutes
   
-  exercises Exercise[]
+  sets      WorkoutSet[]
   
   userId    String
   user      User     @relation(fields: [userId], references: [id])
 }
 
-model Exercise {
+// Previously "Exercise" - now represents a specific logged set/exercise within a workout
+model WorkoutSet {
   id        String   @id @default(uuid())
-  name      String
+  name      String   // Keeps the name for historical simplicity, or could link to Exercise catalog
   sets      Int
   reps      String   // "12,10,8" or "12"
   weight    String   // "60,65,70"
   
   workoutId String
   workout   Workout  @relation(fields: [workoutId], references: [id])
+
+  // Optional link to catalog if we want strict typing later
+  exerciseId String?
+  exercise      Exercise? @relation(fields: [exerciseId], references: [id])
 }
 
 // --- NUTRITION (Fuel Station) ---
@@ -92,4 +97,50 @@ model NutritionLog {
   
   userId    String
   user      User     @relation(fields: [userId], references: [id])
+}
+
+// --- CATALOGS (Local First) ---
+
+// 1. Exercise Catalog (Manual Only)
+model Exercise {
+  id          String   @id @default(uuid())
+  name        String
+  muscleGroup String   // e.g. "Chest", "Legs"
+  
+  workoutSets WorkoutSet[]
+
+  userId      String?   // If we want per-user custom exercises, optional for seeded ones
+}
+
+// 2. Recipes Catalog (Seeded + Manual)
+model Recipe {
+  id          String   @id @default(uuid())
+  name        String
+  calories    Int
+  protein     Int
+  carbs       Int
+  fats        Int
+  description String?
+  ingredients String? // Comma separated, for search
+}
+
+// 3. Vault: Books (Manual)
+model Book {
+  id        String   @id @default(uuid())
+  title     String
+  author    String
+  pages     Int
+  coverUrl  String?  // URL or local path
+  
+  status    String   @default("READING") // READING, COMPLETED, WISHLIST
+  rating    Int?
+}
+
+// 4. Vault: Link Vault
+model LinkVault {
+  id        String   @id @default(uuid())
+  platform  String   // 'YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'X'
+  url       String
+  notes     String?
+  createdAt DateTime @default(now())
 }

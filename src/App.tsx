@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useProtocolStore } from './store/useProtocolStore';
 import { getProtocolDate } from './lib/dateUtils';
 import { Dashboard } from './pages/Dashboard';
@@ -15,36 +15,38 @@ import { Login } from './pages/Login';
 import { useAuthStore } from './store/useAuthStore';
 
 function App() {
-  const [isLocked, setIsLocked] = useState(false);
-  const { history, recoverMonkMode, theme, syncHabits } = useProtocolStore();
+  const { history, recoverMonkMode, theme, syncHabits, checkDailyReset } = useProtocolStore();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated());
+
+  // Check Logical Day Reset
+  useEffect(() => {
+    checkDailyReset();
+  }, [checkDailyReset]);
+
+  // Derived State for Monk Mode Lock
+  const today = getProtocolDate();
+  const log = history[today];
+  const isLocked = Boolean(log?.screenTimeFailed || log?.noGoonFailed);
 
   // Sync Data on Load
   useEffect(() => {
     if (isAuthenticated) {
       syncHabits();
     }
-  }, [isAuthenticated]);
-
-  if (!isAuthenticated) return <Login />;
+  }, [isAuthenticated, syncHabits]);
 
   useEffect(() => {
     // Apply Theme
     document.body.className = ''; // Reset
     if (theme === 'MINIMAL_DARK') document.body.classList.add('minimal-dark');
     if (theme === 'MINIMAL_HOLISTIC') document.body.classList.add('minimal-holistic');
+  }, [theme]);
 
-    // Check for Monk Mode triggers
-    const today = getProtocolDate();
-    const log = history[today];
-    if (log?.screenTimeFailed || log?.noGoonFailed) {
-      setIsLocked(true);
-    }
-  }, [history, theme]);
+  if (!isAuthenticated) return <Login />;
 
   const handleUnlock = () => {
     recoverMonkMode();
-    setIsLocked(false);
+    // No need to set local state, store update will trigger re-render
   };
 
   if (isLocked) {

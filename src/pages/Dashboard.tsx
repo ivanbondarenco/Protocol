@@ -7,9 +7,11 @@ import { NeonCard } from '../components/NeonCard';
 import { getProtocolDate, getDisplayDate } from '../lib/dateUtils';
 import { subDays, format, addDays, isAfter } from 'date-fns';
 import { useMemo, useState } from 'react';
-import { Plus, X, AlertOctagon, Settings, Palette, Globe } from 'lucide-react';
+import { Settings, Plus, X, AlertOctagon, Globe, User } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { APP_TRANSLATIONS } from '../data/translations';
+import { SocialModule } from '../components/social/SocialModule';
+import { ProfileModal } from '../components/profile/ProfileModal';
 
 // Matrix Component
 const MatrixGrid = () => {
@@ -46,7 +48,7 @@ const MatrixGrid = () => {
 };
 
 export const Dashboard = () => {
-    const { habits, toggleHabit, history, addHabit, removeHabit, gymStats, theme, setTheme, language, setLanguage } = useProtocolStore();
+    const { habits, toggleHabit, history, addHabit, removeHabit, gymStats, theme, setTheme, language, setLanguage, bioData } = useProtocolStore();
     const todayKey = getProtocolDate();
     const todayLog = history[todayKey] || { completedHabits: [] };
 
@@ -63,6 +65,7 @@ export const Dashboard = () => {
 
     // Settings / Theme Logic
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     const handleDelete = (id: string) => {
         if (window.confirm(t.DELETE_CONFIRM)) {
@@ -124,10 +127,27 @@ export const Dashboard = () => {
                         <p className="text-xs text-accent-neon font-mono">{getDisplayDate()}</p>
                     </div>
                 </div>
-                <button onClick={() => setIsSettingsOpen(true)} className="text-gray-500 hover:text-accent-neon transition-colors p-1">
-                    <Settings size={20} />
-                </button>
+                <div className="flex gap-2">
+                    <button onClick={() => setIsProfileOpen(true)} className="relative w-8 h-8 rounded-full overflow-hidden border border-white/20 hover:border-accent-neon transition-colors">
+                        {bioData.avatar ? (
+                            <img src={bioData.avatar} alt="User" className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full bg-white/10 flex items-center justify-center text-gray-500">
+                                <User size={16} />
+                            </div>
+                        )}
+                    </button>
+                    <button onClick={() => setIsSettingsOpen(true)} className="text-gray-500 hover:text-accent-neon transition-colors p-1">
+                        <Settings size={20} />
+                    </button>
+                </div>
             </header>
+
+            <AnimatePresence>
+                {isProfileOpen && (
+                    <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+                )}
+            </AnimatePresence>
 
             {isMembershipExpired && (
                 <div className="mb-6 bg-accent-alert/10 border border-accent-alert p-3 flex items-center gap-3 animate-pulse">
@@ -138,6 +158,9 @@ export const Dashboard = () => {
                     </div>
                 </div>
             )}
+
+            {/* Social Module */}
+            <SocialModule />
 
             {/* The Matrix */}
             <MatrixGrid />
