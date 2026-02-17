@@ -1,146 +1,102 @@
-// This is your Prisma schema file.
-// Learn more: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // --- USERS & AUTH ---
 model User {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  password  String    // Hashed
-  name      String?
-  createdAt DateTime  @default(now())
-  
-  // Protocol State
-  level     Int       @default(1)
-  points    Int       @default(0)
-  
+  id           String    @id @default(uuid())
+  email        String    @unique
+  password     String
+  name         String?
+  level        Int       @default(1)
+  points       Int       @default(0)
   // Relations
-  habits    Habit[]
-  habitLogs HabitLog[]
-  workouts  Workout[]
-  nutrition NutritionLog[]
+  habits       Habit[]
+  habitLogs    HabitLog[]
+  workouts     Workout[]
+  nutrition    NutritionLog[]
 }
 
 // --- HABITS (Dashboard) ---
 model Habit {
-  id          String     @id @default(uuid())
-  title       String
-  category    String     // 'MINDSET', 'BODY', 'SPIRIT'
-  streak      Int        @default(0)
-  
-  // Relations
-  userId      String
-  user        User       @relation(fields: [userId], references: [id])
-  logs        HabitLog[]
+  id        String     @id @default(uuid())
+  title     String
+  category  String     // 'MINDSET', 'BODY', 'SPIRIT'
+  streak    Int        @default(0)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  logs      HabitLog[]
 }
 
 model HabitLog {
-    id        String   @id @default(uuid())
-    date      DateTime // e.g. "2024-02-12T00:00:00.000Z"
-    completed Boolean  @default(true)
-    
-    habitId   String
-    habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
-    
-    userId    String
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-    @@unique([habitId, date]) // One log per habit per day
-}
-
-// --- WORKOUTS (Training Log) ---
-model Workout {
   id        String   @id @default(uuid())
-  date      DateTime @default(now())
-  name      String   // "Chest Day", "Legs"
-  duration  Int?     // Minutes
-  
-  sets      WorkoutSet[]
-  
+  date      DateTime
+  completed Boolean  @default(true)
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id])
   userId    String
   user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([habitId, date])
 }
 
-// Previously "Exercise" - now represents a specific logged set/exercise within a workout
+// --- TRAINING (Training Log) ---
+model Workout {
+  id        String      @id @default(uuid())
+  date      DateTime    @default(now())
+  name      String      // "Chest Day"
+  duration  Int?
+  sets      WorkoutSet[]
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+}
+
 model WorkoutSet {
   id        String   @id @default(uuid())
-  name      String   // Keeps the name for historical simplicity, or could link to Exercise catalog
+  name      String   // Exercise Name
   sets      Int
-  reps      String   // "12,10,8" or "12"
+  reps      String   // "12,10,8"
   weight    String   // "60,65,70"
-  
   workoutId String
   workout   Workout  @relation(fields: [workoutId], references: [id])
-
-  // Optional link to catalog if we want strict typing later
-  exerciseId String?
-  exercise      Exercise? @relation(fields: [exerciseId], references: [id])
 }
 
-// --- NUTRITION (Fuel Station) ---
+// --- NUTRITION ---
 model NutritionLog {
   id        String   @id @default(uuid())
   date      DateTime @default(now())
-  
   calories  Int
   protein   Int
   carbs     Int
   fats      Int
-  
   userId    String
   user      User     @relation(fields: [userId], references: [id])
 }
 
-// --- CATALOGS (Local First) ---
-
-// 1. Exercise Catalog (Manual Only)
+// --- CATALOGS ---
 model Exercise {
-  id          String   @id @default(uuid())
+  id          String @id @default(uuid())
   name        String
-  muscleGroup String   // e.g. "Chest", "Legs"
-  
-  workoutSets WorkoutSet[]
-
-  userId      String?   // If we want per-user custom exercises, optional for seeded ones
+  muscleGroup String
 }
 
-// 2. Recipes Catalog (Seeded + Manual)
 model Recipe {
-  id          String   @id @default(uuid())
-  name        String
-  calories    Int
-  protein     Int
-  carbs       Int
-  fats        Int
-  description String?
-  ingredients String? // Comma separated, for search
+  id        String  @id @default(uuid())
+  name      String
+  calories  Int
+  protein   Int
+  ingredients String?
 }
 
-// 3. Vault: Books (Manual)
 model Book {
-  id        String   @id @default(uuid())
-  title     String
-  author    String
-  pages     Int
-  coverUrl  String?  // URL or local path
-  
-  status    String   @default("READING") // READING, COMPLETED, WISHLIST
-  rating    Int?
-}
-
-// 4. Vault: Link Vault
-model LinkVault {
-  id        String   @id @default(uuid())
-  platform  String   // 'YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'X'
-  url       String
-  notes     String?
-  createdAt DateTime @default(now())
+  id     String @id @default(uuid())
+  title  String
+  author String
+  pages  Int
+  status String @default("READING")
 }
