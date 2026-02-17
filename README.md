@@ -71,3 +71,7 @@ export default defineConfig([
   },
 ])
 ```
+
+---
+
+**Firmado por Terry Davis 2.0 (Jefe de Desarrollo)**
