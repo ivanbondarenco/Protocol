@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import cors from 'cors'; // Importar cors
 import authRoutes from './auth/auth.routes'; // Importar rutas de autenticación
+import habitRoutes from './habits/habits.routes'; // Importar rutas de hábitos
 import { authenticateToken } from './auth/auth.middleware'; // Importar middleware de autenticación
 
 dotenv.config();
@@ -16,6 +17,9 @@ app.use(cors()); // Habilitar CORS para todas las rutas
 
 // Rutas de autenticación (no requieren token)
 app.use('/api/auth', authRoutes);
+
+// Rutas de hábitos (protegidas con JWT)
+app.use('/api/habits', habitRoutes);
 
 // Ruta de prueba (ahora protegida con JWT)
 app.get('/api/saludo-protegido', authenticateToken, (req, res) => {
