@@ -74,7 +74,7 @@ export const Login = () => {
                                 onClick={() => setLanguage('ES')}
                                 className={`px-3 py-1.5 text-xs transition-colors ${language === 'ES' ? 'bg-white text-black' : 'bg-transparent text-gray-400 hover:text-white'}`}
                             >
-                                Español
+                                Espanol
                             </button>
                         </div>
                     </div>
@@ -168,3 +168,4 @@ export const Login = () => {
         </div>
     );
 };
+

@@ -5,46 +5,99 @@ import { ProtocolToggle } from '../components/ProtocolToggle';
 import { ProgressBar } from '../components/ProgressBar';
 import { NeonCard } from '../components/NeonCard';
 import { getProtocolDate, getDisplayDate } from '../lib/dateUtils';
-import { subDays, format } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import { useMemo, useState } from 'react';
 import { useEffect } from 'react';
-import { Settings, Plus, X, Globe, User, Activity, Users, ArrowRight, Flame } from 'lucide-react';
+import { Settings, Plus, X, Globe, User, Activity, ArrowRight, Flame } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { APP_TRANSLATIONS } from '../data/translations';
 import { ProfileModal } from '../components/profile/ProfileModal';
 import { api } from '../lib/api';
-import { Link } from 'react-router-dom';
 
 // Matrix Component
 const MatrixGrid = () => {
-    const { history } = useProtocolStore();
-    const matrixDays = useMemo(() => {
-        return Array.from({ length: 30 }).map((_, i) => {
-            // const date = subDays(new Date(), 29 - i); // unused
-            const dateKey = format(subDays(new Date(), 29 - i), 'yyyy-MM-dd');
+    const { history, getDailyCompletion } = useProtocolStore();
+    const user = useAuthStore((state) => state.user);
+    const TOTAL_SLOTS = 70;
 
-            const log = history[dateKey];
-            // Assuming 5 default habits minimum for 100% calc for now, or dynamic length
-            const totalHabits = 5;
-            const completion = log ? (log.completedHabits.length / totalHabits) * 100 : 0;
-
-            let bgClass = 'bg-[#222]';
-            if (dateKey === format(new Date(), 'yyyy-MM-dd')) bgClass = 'bg-accent-neon animate-pulse';
-            else if (log) {
-                if (completion === 100) bgClass = 'bg-white shadow-[0_0_10px_white]';
-                else if (completion >= 80) bgClass = 'bg-accent-neon shadow-[0_0_8px_#00f2ff]';
-                else if (completion > 0) bgClass = 'bg-[#555]';
+    const accountStartKey = useMemo(() => {
+        if (user?.createdAt) {
+            const created = new Date(user.createdAt);
+            if (!Number.isNaN(created.getTime())) {
+                return format(created, 'yyyy-MM-dd');
             }
+        }
+        const historyKeys = Object.keys(history).sort();
+        if (historyKeys.length > 0) return historyKeys[0];
+        return format(new Date(), 'yyyy-MM-dd');
+    }, [history, user?.createdAt]);
 
-            return { dateKey, bgClass };
+    const todayKey = format(new Date(), 'yyyy-MM-dd');
+    const matrixDays = useMemo(() => {
+        const startDate = new Date(`${accountStartKey}T00:00:00`);
+
+        return Array.from({ length: TOTAL_SLOTS }).map((_, i) => {
+            const dateKey = format(addDays(startDate, i), 'yyyy-MM-dd');
+            const isFuture = dateKey > todayKey;
+            const completion = isFuture ? { done: 0, total: 0 } : getDailyCompletion(dateKey);
+            const ratio = completion.total > 0 ? completion.done / completion.total : 0;
+            let bgClass = 'bg-[#2f3338]';
+            if (ratio >= 1) bgClass = 'bg-[#4dd06a]';
+            else if (ratio >= 0.67) bgClass = 'bg-[#35a153]';
+            else if (ratio >= 0.34) bgClass = 'bg-[#2a6b3d]';
+            else if (ratio > 0) bgClass = 'bg-[#1f4028]';
+
+            return {
+                dateKey,
+                bgClass,
+                done: completion.done,
+                total: completion.total,
+                isFuture,
+                isToday: dateKey === todayKey
+            };
         });
-    }, [history]);
+    }, [accountStartKey, getDailyCompletion, todayKey]);
+
+    const matrixWeeks = useMemo(() => {
+        return Array.from({ length: 10 }).map((_, weekIndex) =>
+            matrixDays.slice(weekIndex * 7, weekIndex * 7 + 7)
+        );
+    }, [matrixDays]);
 
     return (
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(10px,1fr))] gap-1 mb-8 h-8 items-end">
-            {matrixDays.map((day) => (
-                <div key={day.dateKey} className={`w-full h-full rounded-sm transition-all duration-300 ${day.bgClass}`} />
-            ))}
+        <div className="space-y-4">
+            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.15em] text-gray-500 font-bold">
+                <span className="flex items-center gap-1.5">
+                    <Activity size={12} className="text-gray-600" />
+                    Ritmo semanal
+                </span>
+                <span className="opacity-60">{TOTAL_SLOTS} días</span>
+            </div>
+
+            <div className="w-full">
+                <div className="grid w-full grid-cols-10 gap-[4px]">
+                    {matrixWeeks.map((week, weekIndex) => (
+                        <div key={`week-${weekIndex}`} className="grid grid-rows-7 gap-[4px]">
+                            {week.map((day) => (
+                                <div
+                                    key={day.dateKey}
+                                    className={`aspect-square w-full rounded-[3px] border border-black/20 transition-all duration-500 ${day.bgClass} ${day.isFuture ? 'opacity-20' : ''} ${day.isToday ? 'ring-2 ring-white/30 ring-offset-2 ring-offset-voidblack' : ''}`}
+                                    title={`${day.dateKey} // ${day.done}/${day.total || 0}`}
+                                />
+                            ))}
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="flex items-center justify-between text-[9px] uppercase tracking-wider text-gray-500/80 font-medium">
+                <span>Inicio {new Date(`${accountStartKey}T00:00:00`).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' })}</span>
+                <div className="flex items-center gap-1.5 bg-white/5 p-1 px-2 rounded-full border border-white/5">
+                    <span className="h-2 w-2 rounded-full bg-[#2f3338]" />
+                    <span className="h-2 w-2 rounded-full bg-[#4dd06a] shadow-[0_0_8px_#4dd06a44]" />
+                    <span className="text-gray-400 ml-1">Intensidad</span>
+                </div>
+            </div>
         </div>
     );
 };
@@ -76,12 +129,6 @@ export const Dashboard = () => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [weeklyInsights, setWeeklyInsights] = useState<{ score: number; completeDays: number; recommendations: string[] } | null>(null);
     const [isInsightsOpen, setIsInsightsOpen] = useState(false);
-    const [socialSummary, setSocialSummary] = useState<{ allies: number; invites: number; unreadPings: number; sparks: number }>({
-        allies: 0,
-        invites: 0,
-        unreadPings: 0,
-        sparks: 0
-    });
     const currentStreak = getCurrentStreak();
 
     useEffect(() => {
@@ -99,31 +146,6 @@ export const Dashboard = () => {
         };
         load();
     }, [history]);
-
-    useEffect(() => {
-        const loadSocialSummary = async () => {
-            try {
-                const [alliesRes, invitesRes, pingsRes, sparksRes] = await Promise.all([
-                    api.get('/social/allies'),
-                    api.get('/social/invites'),
-                    api.get('/social/pings'),
-                    api.get('/social/sparks/feed')
-                ]);
-
-                const pings = (pingsRes.pings || []) as Array<{ seen?: boolean }>;
-                setSocialSummary({
-                    allies: (alliesRes.allies || []).length,
-                    invites: (invitesRes.invitations || []).length,
-                    unreadPings: pings.filter((p) => !p.seen).length,
-                    sparks: (sparksRes.sparks || []).length
-                });
-            } catch (e) {
-                console.error('Could not load social summary', e);
-            }
-        };
-
-        loadSocialSummary();
-    }, []);
 
     const handleDelete = (id: string) => {
         if (window.confirm(t.DELETE_CONFIRM)) {
@@ -188,27 +210,29 @@ export const Dashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-voidblack pb-24 px-4 pt-8 max-w-md mx-auto relative transition-colors duration-300">
-            <header className="mb-4 flex justify-between items-start">
-                <div>
-                    <GlitchText text={t.DASHBOARD_TITLE} className="mb-2" />
-                    <div className="flex justify-between items-baseline gap-4">
-                        <p className="text-gray-400 text-sm">{t.DAY} {Object.keys(history).length + 1} // {t.COMMIT}</p>
-                        <p className="text-xs text-accent-neon font-mono">{getDisplayDate()}</p>
+        <div className="min-h-screen bg-voidblack pb-32 px-5 pt-8 max-w-md mx-auto relative transition-colors duration-300">
+            <header className="mb-8 flex justify-between items-center">
+                <div className="space-y-1">
+                    <GlitchText text={t.DASHBOARD_TITLE} size="xl" />
+                    <div className="flex items-center gap-2 opacity-60">
+                        <Activity size={12} className="text-gray-400" />
+                        <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
+                            Día {Object.keys(history).length + 1} // {getDisplayDate()}
+                        </span>
                     </div>
                 </div>
-                <div className="flex gap-2">
-                    <button onClick={() => setIsProfileOpen(true)} className="relative w-8 h-8 rounded-full overflow-hidden border border-white/20 hover:border-accent-neon transition-colors">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => setIsProfileOpen(true)} className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-white/10 hover:border-white/30 transition-all p-0.5 bg-gradient-to-br from-white/10 to-transparent">
                         {bioData.avatar ? (
-                            <img src={bioData.avatar} alt="User" className="w-full h-full object-cover" />
+                            <img src={bioData.avatar} alt="User" className="w-full h-full rounded-full object-cover" />
                         ) : (
-                            <div className="w-full h-full bg-white/10 flex items-center justify-center text-gray-500">
+                            <div className="w-full h-full bg-voidblack flex items-center justify-center text-gray-500 rounded-full">
                                 <User size={16} />
                             </div>
                         )}
                     </button>
-                    <button onClick={() => setIsSettingsOpen(true)} className="text-gray-500 hover:text-accent-neon transition-colors p-1">
-                        <Settings size={20} />
+                    <button onClick={() => setIsSettingsOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all">
+                        <Settings size={18} />
                     </button>
                 </div>
             </header>
@@ -219,54 +243,49 @@ export const Dashboard = () => {
                 )}
             </AnimatePresence>
 
-            <section className="mb-4 rounded-xl border border-orange-500/30 bg-orange-500/10 p-3">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-[10px] uppercase tracking-wider text-orange-300">Racha actual</p>
-                        <p className="text-white text-2xl font-black">{currentStreak} dias</p>
+            {/* Main Priority: Streak KPI (Horizontal) */}
+            <section className="mb-6 rounded-2xl border border-orange-500/20 bg-orange-500/5 p-4 flex items-center justify-between overflow-hidden relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-orange-500/5 to-orange-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                <div className="flex items-center gap-4 relative">
+                    <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(249,115,22,0.15)]">
+                        <Flame size={24} className="text-orange-500 fill-orange-500/20" />
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-orange-500/15 border border-orange-400/40 flex items-center justify-center">
-                        <Flame size={20} className="text-orange-400 fill-orange-500/40" />
+                    <div>
+                        <p className="text-[10px] uppercase tracking-[0.15em] text-orange-400/70 font-black">Racha Actual</p>
+                        <p className="text-white text-2xl font-black">{currentStreak} días</p>
                     </div>
                 </div>
-                <p className="text-[11px] text-orange-100/70 mt-1">Se mantiene automatica al completar todos tus habitos del dia.</p>
+                <div className="text-right relative">
+                    <p className="text-[10px] text-gray-500 font-bold uppercase leading-tight tracking-wider">Protocolo<br />Activo</p>
+                </div>
             </section>
 
-            <section className="mb-5 grid grid-cols-2 gap-3">
-                <Link to="/social" className="rounded-xl border border-white/10 bg-white/5 p-3 hover:border-white/30 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                        <p className="text-[10px] uppercase tracking-wider text-gray-400">Social</p>
-                        <Users size={14} className="text-gray-400" />
-                    </div>
-                    <p className="text-sm text-white font-semibold">{socialSummary.allies} aliados</p>
-                    <p className="text-[11px] text-gray-500">{socialSummary.unreadPings} pings // {socialSummary.sparks} chispas</p>
-                    <div className="mt-2 text-[10px] text-gray-400 uppercase flex items-center gap-1">
-                        Ver social <ArrowRight size={12} />
-                    </div>
-                </Link>
-
-                <button onClick={openInsights} className="rounded-xl border border-white/10 bg-white/5 p-3 hover:border-white/30 transition-colors text-left">
-                    <div className="flex items-center justify-between mb-2">
-                        <p className="text-[10px] uppercase tracking-wider text-gray-400">Insights</p>
-                        <Activity size={14} className="text-gray-400" />
-                    </div>
-                    <p className="text-sm text-white font-semibold">Score {weeklyInsights?.score ?? '--'}</p>
-                    <p className="text-[11px] text-gray-500">{socialSummary.invites} invitaciones pendientes</p>
-                    <div className="mt-2 text-[10px] text-gray-400 uppercase flex items-center gap-1">
-                        Ver insights <ArrowRight size={12} />
-                    </div>
-                </button>
+            {/* Second Priority: Weekly Rhythm (Featured Card) */}
+            <section className="mb-8">
+                <NeonCard className="border-white/5 bg-white/[0.02] p-5 rounded-[24px]">
+                    <MatrixGrid />
+                    <button
+                        onClick={openInsights}
+                        className="w-full mt-4 py-2 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 hover:text-white transition-colors border-t border-white/5 pt-4"
+                    >
+                        Ver Insights <ArrowRight size={12} />
+                    </button>
+                </NeonCard>
             </section>
 
-            <div className="mb-8 space-y-2">
-                <div className="flex justify-between text-xs uppercase tracking-wider text-gray-400">
-                    <span>{t.DAILY_PROGRESS}</span>
-                    <span>{Math.round(progress)}%</span>
+            <div className="mb-8 space-y-3">
+                <div className="flex justify-between items-end">
+                    <span className="text-[10px] uppercase tracking-[0.2em] font-black text-gray-500">{t.DAILY_PROGRESS}</span>
+                    <span className="text-xs font-mono text-white font-black">{Math.round(progress)}%</span>
                 </div>
                 <ProgressBar progress={progress} />
             </div>
 
             <div className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                    <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Hábitos de hoy</h2>
+                    <span className="text-[10px] font-mono text-gray-600">{completedCount}/{scheduledHabits.length}</span>
+                </div>
                 {scheduledHabits.map((habit) => (
                     <ProtocolToggle
                         key={habit.id}
@@ -278,23 +297,19 @@ export const Dashboard = () => {
                     />
                 ))}
                 {scheduledHabits.length === 0 && (
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
-                        <p className="text-xs text-gray-300 uppercase mb-1">No hay habitos para hoy</p>
-                        <p className="text-[11px] text-gray-500">Usa el boton flotante para agregar uno rapido.</p>
+                    <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-8 text-center">
+                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Sin protocolos activos</p>
+                        <p className="text-[11px] text-gray-600">Presiona el botón + para iniciar tu día.</p>
                     </div>
                 )}
             </div>
 
-            {/* The Matrix */}
-            <div className="mt-7">
-                <MatrixGrid />
-            </div>
-
+            {/* FAB: Primary Action (Thumb accessible) */}
             <button
                 onClick={() => setIsAddOpen(true)}
-                className="fixed bottom-28 right-4 z-40 rounded-full bg-white text-black px-4 py-3 text-xs font-bold uppercase tracking-wider shadow-[0_12px_36px_rgba(255,255,255,0.25)] hover:scale-[1.02] transition-transform flex items-center gap-2"
+                className="fixed bottom-24 right-6 z-40 w-16 h-16 rounded-3xl bg-white text-black shadow-[0_12px_40px_rgba(0,0,0,0.5)] hover:scale-105 active:scale-90 transition-all flex items-center justify-center border border-white/20 group"
             >
-                <Plus size={14} /> {t.ADD_PROTOCOL}
+                <Plus size={32} className="group-hover:rotate-90 transition-transform duration-300" strokeWidth={2.5} />
             </button>
 
             {/* Add Protocol Modal */}
@@ -306,10 +321,10 @@ export const Dashboard = () => {
                     >
                         <motion.div
                             initial={{ y: 20 }} animate={{ y: 0 }} exit={{ y: 20 }}
-                            className="bg-carbonblack border border-accent-neon/30 p-6 rounded w-full max-w-sm"
+                            className="bg-[#171719] border border-white/15 p-6 rounded-2xl w-full max-w-sm"
                         >
                             <div className="flex justify-between mb-6">
-                                <h3 className="text-accent-neon font-bold uppercase">{t.NEW_PROTOCOL}</h3>
+                                <h3 className="text-white font-bold uppercase">{t.NEW_PROTOCOL}</h3>
                                 <button onClick={() => setIsAddOpen(false)}><X className="text-gray-500" /></button>
                             </div>
                             <form onSubmit={handleAddHabit} className="space-y-4">
@@ -317,7 +332,7 @@ export const Dashboard = () => {
                                     <label className="text-xs text-gray-500 uppercase block mb-1">{t.TITLE_LABEL}</label>
                                     <input
                                         autoFocus
-                                        className="w-full bg-black/50 border border-white/10 p-3 text-white outline-none focus:border-accent-neon"
+                                        className="w-full rounded-xl bg-black/50 border border-white/10 p-3 text-white outline-none focus:border-white/40"
                                         placeholder="e.g. Cold Shower"
                                         value={newHabitTitle} onChange={e => setNewHabitTitle(e.target.value)}
                                     />
@@ -325,7 +340,7 @@ export const Dashboard = () => {
                                 <div>
                                     <label className="text-xs text-gray-500 uppercase block mb-1">{t.CATEGORY_LABEL}</label>
                                     <select
-                                        className="w-full bg-black/50 border border-white/10 p-3 text-white outline-none focus:border-accent-neon"
+                                        className="w-full rounded-xl bg-black/50 border border-white/10 p-3 text-white outline-none focus:border-white/40"
                                         value={newHabitCat} onChange={e => setNewHabitCat(e.target.value)}
                                     >
                                         <option value="PHYSICAL">PHYSICAL</option>
@@ -340,14 +355,14 @@ export const Dashboard = () => {
                                         <button
                                             type="button"
                                             onClick={() => setNewHabitRepeat('DAILY')}
-                                            className={`py-2 text-xs border ${newHabitRepeat === 'DAILY' ? 'border-accent-neon text-accent-neon' : 'border-white/10 text-gray-500'}`}
+                                            className={`rounded-xl py-2 text-xs border transition-colors ${newHabitRepeat === 'DAILY' ? 'border-white/40 text-white bg-white/10' : 'border-white/10 text-gray-500 hover:text-white'}`}
                                         >
                                             TODOS LOS DIAS
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setNewHabitRepeat('WEEKLY')}
-                                            className={`py-2 text-xs border ${newHabitRepeat === 'WEEKLY' ? 'border-accent-neon text-accent-neon' : 'border-white/10 text-gray-500'}`}
+                                            className={`rounded-xl py-2 text-xs border transition-colors ${newHabitRepeat === 'WEEKLY' ? 'border-white/40 text-white bg-white/10' : 'border-white/10 text-gray-500 hover:text-white'}`}
                                         >
                                             DIAS ESPECIFICOS
                                         </button>
@@ -364,7 +379,7 @@ export const Dashboard = () => {
                                                         key={day}
                                                         type="button"
                                                         onClick={() => setNewHabitDays(prev => prev.includes(i) ? prev.filter(d => d !== i) : [...prev, i])}
-                                                        className={`py-2 text-xs border ${active ? 'border-accent-neon text-accent-neon' : 'border-white/10 text-gray-500'}`}
+                                                        className={`rounded-lg py-2 text-xs border transition-colors ${active ? 'border-white/40 text-white bg-white/10' : 'border-white/10 text-gray-500 hover:text-white'}`}
                                                     >
                                                         {day}
                                                     </button>
@@ -373,7 +388,7 @@ export const Dashboard = () => {
                                         </div>
                                     </div>
                                 )}
-                                <button className="w-full bg-accent-neon text-black font-bold py-3 uppercase text-xs tracking-widest hover:bg-white transition-colors">
+                                <button className="w-full rounded-xl bg-white text-black font-bold py-3 uppercase text-xs tracking-widest hover:bg-gray-200 transition-colors">
                                     {t.INIT_PROTOCOL}
                                 </button>
                             </form>
@@ -391,10 +406,10 @@ export const Dashboard = () => {
                     >
                         <motion.div
                             initial={{ scale: 0.9 }} animate={{ scale: 1 }}
-                            className="bg-carbonblack border border-accent-neon/30 p-6 rounded w-full max-w-sm overflow-y-auto max-h-[80vh]"
+                            className="bg-[#171719] border border-white/15 p-6 rounded-2xl w-full max-w-sm overflow-y-auto max-h-[80vh]"
                         >
                             <div className="flex justify-between mb-6">
-                                <h3 className="text-accent-neon font-bold uppercase flex items-center gap-2">
+                                <h3 className="text-white font-bold uppercase flex items-center gap-2">
                                     <Settings size={16} /> {t.SETTINGS}
                                 </h3>
                                 <button onClick={() => setIsSettingsOpen(false)}><X className="text-gray-500 hover:text-white" /></button>
@@ -409,15 +424,15 @@ export const Dashboard = () => {
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => setLanguage('EN')}
-                                            className={`flex-1 py-2 text-xs font-bold border rounded transition-colors ${language === 'EN' ? 'bg-accent-neon text-black border-accent-neon' : 'border-white/10 text-gray-500 hover:text-white'}`}
+                                            className={`flex-1 py-2 text-xs font-bold border rounded-xl transition-colors ${language === 'EN' ? 'bg-white text-black border-white' : 'border-white/10 text-gray-500 hover:text-white'}`}
                                         >
                                             ENGLISH
                                         </button>
                                         <button
                                             onClick={() => setLanguage('ES')}
-                                            className={`flex-1 py-2 text-xs font-bold border rounded transition-colors ${language === 'ES' ? 'bg-accent-neon text-black border-accent-neon' : 'border-white/10 text-gray-500 hover:text-white'}`}
+                                            className={`flex-1 py-2 text-xs font-bold border rounded-xl transition-colors ${language === 'ES' ? 'bg-white text-black border-white' : 'border-white/10 text-gray-500 hover:text-white'}`}
                                         >
-                                            ESPAÑOL
+                                            ESPANOL
                                         </button>
                                     </div>
                                 </div>
@@ -440,7 +455,18 @@ export const Dashboard = () => {
                                         <div className="w-8 h-8 rounded-full bg-[#1C1917] border border-[#86EFAC]" />
                                         <div className="text-left">
                                             <p className="text-white font-bold text-xs uppercase">Holistic</p>
-                                            <p className="text-gray-500 text-[10px]">Organic // Zen // Stone</p>
+                                            <p className="text-gray-500 text-[10px]">Organic // Earthy // Focused</p>
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setTheme('MINIMAL_LIGHT')}
+                                        className={`w-full p-4 border rounded flex items-center gap-4 transition-all ${theme === 'MINIMAL_LIGHT' ? 'border-[#111827] bg-[#111827]/10' : 'border-white/10 hover:border-white/30'}`}
+                                    >
+                                        <div className="w-8 h-8 rounded-full bg-[#f5f5f7] border border-[#111827]" />
+                                        <div className="text-left">
+                                            <p className="text-white font-bold text-xs uppercase">Minimal Light</p>
+                                            <p className="text-gray-500 text-[10px]">Apple-like // Clean // Bright</p>
                                         </div>
                                     </button>
                                 </div>
@@ -505,8 +531,8 @@ export const Dashboard = () => {
             </AnimatePresence>
 
             {progress === 100 && (
-                <NeonCard className="mt-8 border-accent-neon/30 bg-accent-neon/5">
-                    <h3 className="text-accent-neon text-sm font-bold uppercase mb-2 text-center">{t.PROTOCOL_COMPLETE}</h3>
+                <NeonCard className="mt-8 border-white/20 bg-white/5">
+                    <h3 className="text-white text-sm font-bold uppercase mb-2 text-center">{t.PROTOCOL_COMPLETE}</h3>
                 </NeonCard>
             )}
         </div>

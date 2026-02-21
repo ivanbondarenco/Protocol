@@ -132,7 +132,7 @@ export const Pomodoro = () => {
                 <motion.div
                     animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
                     transition={{ repeat: Infinity, duration: 4 }}
-                    className="absolute inset-0 bg-accent-neon rounded-full blur-[100px] opacity-10 pointer-events-none"
+                    className="absolute inset-0 bg-white rounded-full blur-[100px] opacity-10 pointer-events-none"
                 />
             )}
 
@@ -148,7 +148,7 @@ export const Pomodoro = () => {
                     {formatTime(timeLeft)}
                 </motion.div>
 
-                <div className="mt-4 text-accent-neon font-bold tracking-[0.5em] text-sm uppercase">
+                <div className="mt-4 text-white font-bold tracking-[0.5em] text-sm uppercase">
                     {mode} MODE
                 </div>
             </div>
@@ -160,7 +160,7 @@ export const Pomodoro = () => {
 
                 <button
                     onClick={toggleTimer}
-                    className="w-24 h-24 rounded-full bg-accent-neon text-black flex items-center justify-center shadow-[0_0_30px_rgba(0,242,255,0.3)] hover:scale-105 transition-transform"
+                    className="w-24 h-24 rounded-full bg-white text-black flex items-center justify-center shadow-[0_10px_26px_rgba(0,0,0,0.35)] hover:scale-105 transition-transform"
                 >
                     {isActive ? <Pause size={32} fill="currentColor" /> : <Play size={32} fill="currentColor" className="ml-1" />}
                 </button>

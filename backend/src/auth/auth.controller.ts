@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey';
+const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'];
 
 const registerSchema = z.object({
   email: z.string().email('Formato de email invalido.'),
@@ -71,12 +72,20 @@ export const register = async (req: Request, res: Response) => {
       },
     });
 
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
     res.status(201).json({
       message: 'Usuario registrado con exito',
       token,
-      user: { id: user.id, email: user.email, username: user.username, name: user.name, avatarUrl: user.avatarUrl, onboardingCompleted: user.onboardingCompleted },
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        name: user.name,
+        avatarUrl: user.avatarUrl,
+        onboardingCompleted: user.onboardingCompleted,
+        createdAt: user.createdAt,
+      },
     });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -101,12 +110,20 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Credenciales invalidas.' });
     }
 
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
     res.status(200).json({
       message: 'Inicio de sesion exitoso',
       token,
-      user: { id: user.id, email: user.email, username: user.username, name: user.name, avatarUrl: user.avatarUrl, onboardingCompleted: user.onboardingCompleted },
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        name: user.name,
+        avatarUrl: user.avatarUrl,
+        onboardingCompleted: user.onboardingCompleted,
+        createdAt: user.createdAt,
+      },
     });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -152,7 +169,7 @@ export const updateMe = async (req: AuthRequest, res: Response) => {
     const user = await prisma.user.update({
       where: { id: userId },
       data: updates,
-      select: { id: true, email: true, username: true, name: true, avatarUrl: true, onboardingCompleted: true },
+      select: { id: true, email: true, username: true, name: true, avatarUrl: true, onboardingCompleted: true, createdAt: true },
     });
 
     res.status(200).json({ user });
