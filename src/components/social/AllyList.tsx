@@ -1,87 +1,237 @@
-
 import { motion, AnimatePresence } from 'framer-motion';
-import { Flame, Skull, Plus, AlertOctagon, UserPlus } from 'lucide-react';
-import { useState } from 'react';
-import { useProtocolStore } from '../../store/useProtocolStore';
+import { Plus, UserPlus, X, Search, Bell, Send } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { api } from '../../lib/api';
+import { getRealtimeSocket } from '../../services/realtimeService';
 
-interface Ally {
+interface SearchUser {
     id: string;
-    name: string;
-    img?: string;
+    username: string;
+    name?: string;
+    email: string;
+    avatarUrl?: string;
     streak: number;
-    status: 'ACTIVE' | 'BROKEN' | 'CRITICAL';
-    lastActive: string; // ISO Date String
 }
 
-const mockAllies: Ally[] = [
-    { id: '1', name: 'Jandro', streak: 45, status: 'ACTIVE', lastActive: new Date().toISOString() },
-    { id: '2', name: 'Lucia', streak: 12, status: 'CRITICAL', lastActive: new Date().toISOString() }, // Critical = < 3 hours
-    { id: '3', name: 'Marco', streak: 0, status: 'BROKEN', lastActive: new Date(Date.now() - 86400000).toISOString() },
-    { id: '4', name: 'Sofi', streak: 8, status: 'ACTIVE', lastActive: new Date().toISOString() },
-    { id: '5', name: 'Dani', streak: 0, status: 'BROKEN', lastActive: new Date(Date.now() - 86400000 * 2).toISOString() },
-];
+interface Invite {
+    id: string;
+    fromUser: { id: string; username: string };
+}
 
-export const AllyList = () => {
-    const { theme } = useProtocolStore();
-    const isCyberpunk = theme === 'CYBERPUNK';
+interface Ping {
+    id: string;
+    message: string;
+    seen: boolean;
+    createdAt: string;
+    fromUser: { id: string; username: string };
+}
 
-    const [allies] = useState<Ally[]>(mockAllies);
-    const [nudgedIds, setNudgedIds] = useState<string[]>([]);
+interface AllyTracker {
+    id: string;
+    username: string;
+    name?: string;
+    email: string;
+    avatarUrl?: string;
+    activity: number[];
+}
+
+export const AllyList = ({ view = 'trackers' }: { view?: 'summary' | 'trackers' }) => {
+    const [trackers, setTrackers] = useState<AllyTracker[]>([]);
     const [isAddOpen, setIsAddOpen] = useState(false);
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState<SearchUser[]>([]);
+    const [selected, setSelected] = useState<SearchUser | null>(null);
+    const [isSearching, setIsSearching] = useState(false);
+    const [invites, setInvites] = useState<Invite[]>([]);
+    const [pings, setPings] = useState<Ping[]>([]);
+    const [liveMessage, setLiveMessage] = useState<string | null>(null);
 
-    const handleNudge = (id: string, name: string) => {
-        if (nudgedIds.includes(id)) return;
+    const hasAllies = trackers.length > 0;
+    const unreadPingItems = pings.filter((p) => !p.seen);
+    const unreadPings = unreadPingItems.length;
+    const canSubmit = useMemo(() => !!selected, [selected]);
 
-        // Mock notification logic
-        console.log(`Nudging ${name}: "¡No te mueras!"`);
+    const loadSocial = async () => {
+        try {
+            const [trackerRes, inviteRes, pingRes] = await Promise.all([
+                api.get('/social/allies/trackers'),
+                api.get('/social/invites'),
+                api.get('/social/pings')
+            ]);
+            setTrackers(trackerRes.trackers || []);
+            setInvites(inviteRes.invitations || []);
+            setPings(pingRes.pings || []);
+        } catch (e) {
+            console.error('Load social failed', e);
+            setTrackers([]);
+        }
+    };
 
-        // Vibration feedback
-        if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
+    useEffect(() => {
+        loadSocial();
+    }, []);
 
-        setNudgedIds(prev => [...prev, id]);
+    useEffect(() => {
+        const socket = getRealtimeSocket();
+        if (!socket) return;
 
-        // Temporary UI feedback (e.g. snackbar) could go here
+        const refresh = (message: string) => {
+            setLiveMessage(message);
+            loadSocial();
+            setTimeout(() => setLiveMessage(null), 2200);
+        };
+
+        const onInvite = () => refresh('Nueva invitacion recibida');
+        const onPing = () => refresh('Nuevo ping recibido');
+        const onInviteAccepted = () => refresh('Tu invitacion fue aceptada');
+        const onSpark = () => refresh('Nueva chispa publicada');
+
+        socket.on('social:invite_received', onInvite);
+        socket.on('social:ping_received', onPing);
+        socket.on('social:invite_accepted', onInviteAccepted);
+        socket.on('social:spark_published', onSpark);
+
+        return () => {
+            socket.off('social:invite_received', onInvite);
+            socket.off('social:ping_received', onPing);
+            socket.off('social:invite_accepted', onInviteAccepted);
+            socket.off('social:spark_published', onSpark);
+        };
+    }, []);
+
+    useEffect(() => {
+        const timeout = setTimeout(async () => {
+            const clean = query.trim();
+            if (clean.length < 2) {
+                setResults([]);
+                return;
+            }
+            setIsSearching(true);
+            try {
+                const response = await api.get(`/social/search-users?q=${encodeURIComponent(clean)}`);
+                setResults(response.users || []);
+            } catch (e) {
+                console.error('Search users failed', e);
+                setResults([]);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 250);
+        return () => clearTimeout(timeout);
+    }, [query]);
+
+    const handleAdd = async () => {
+        if (!selected) return;
+        try {
+            await api.post('/social/invites', { toUserId: selected.id });
+            setIsAddOpen(false);
+            setQuery('');
+            setResults([]);
+            setSelected(null);
+            await loadSocial();
+        } catch (e) {
+            console.error('Send invite failed', e);
+        }
+    };
+
+    const handleInviteResponse = async (invitationId: string, action: 'ACCEPT' | 'REJECT') => {
+        try {
+            await api.post('/social/invites/respond', { invitationId, action });
+            await loadSocial();
+        } catch (e) {
+            console.error('Respond invite failed', e);
+        }
+    };
+
+    const handleSendPing = async (toUserId: string) => {
+        try {
+            await api.post('/social/pings', { toUserId, message: 'No aflojes, completa tus habitos hoy.' });
+            setLiveMessage('Ping enviado');
+            setTimeout(() => setLiveMessage(null), 1200);
+        } catch (e) {
+            console.error('Ping send failed', e);
+        }
+    };
+
+    const handleMarkPingsSeen = async () => {
+        try {
+            await api.post('/social/pings/seen', {});
+            setPings((prev) => prev.map((p) => ({ ...p, seen: true })));
+        } catch (e) {
+            console.error('Mark pings seen failed', e);
+        }
     };
 
     return (
         <div className="mb-6">
             <div className="flex justify-between items-center mb-3 px-1">
-                <h3 className={`text-xs font-bold uppercase tracking-widest ${isCyberpunk ? 'text-accent-neon' : 'text-gray-400'}`}>
-                    Mis Aliados
-                </h3>
-                <button
-                    onClick={() => setIsAddOpen(true)}
-                    className="p-1 rounded-full hover:bg-white/10 transition-colors text-gray-500 hover:text-white"
-                >
+                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">Mis Aliados</h3>
+                <button onClick={() => setIsAddOpen(true)} className="p-1 rounded-full hover:bg-white/10 transition-colors text-gray-500 hover:text-white">
                     <UserPlus size={14} />
                 </button>
             </div>
 
-            <div className="flex gap-4 overflow-x-auto pb-4 snap-x [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
-                {allies.map((ally) => (
-                    <AllyCard
-                        key={ally.id}
-                        ally={ally}
-                        isCyberpunk={isCyberpunk}
-                        isNudged={nudgedIds.includes(ally.id)}
-                        onNudge={() => handleNudge(ally.id, ally.name)}
-                    />
-                ))}
+            {liveMessage && (
+                <div className="mb-3 rounded-xl border border-white/10 bg-white/5 p-2 text-xs text-gray-300">
+                    {liveMessage}
+                </div>
+            )}
 
-                {/* Add Friend Card */}
-                <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setIsAddOpen(true)}
-                    className={`min-w-[70px] h-[90px] rounded-xl flex flex-col items-center justify-center border-2 border-dashed transition-colors snap-center
-                        ${isCyberpunk ? 'border-gray-700 hover:border-accent-neon text-gray-600 hover:text-accent-neon' : 'border-gray-800 hover:border-gray-400 text-gray-500 hover:text-gray-300'}
-                    `}
-                >
-                    <Plus size={24} />
-                    <span className="text-[10px] mt-2 font-bold uppercase">Invitar</span>
-                </motion.button>
-            </div>
+            {view === 'trackers' && !hasAllies && (
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-xs text-gray-400">
+                    No tienes aliados todavia. Agrega usuarios por username, email o nombre.
+                </div>
+            )}
 
-            {/* Simple Add Friend Logic (UI only) */}
+            {view === 'trackers' && hasAllies && (
+                <div className="space-y-3">
+                    {trackers.map((ally) => (
+                        <AllyTrackerCard key={ally.id} ally={ally} onPing={() => handleSendPing(ally.id)} />
+                    ))}
+                    <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setIsAddOpen(true)}
+                        className="w-full h-[48px] rounded-xl flex items-center justify-center border-2 border-dashed transition-colors border-gray-800 hover:border-gray-400 text-gray-500 hover:text-gray-300 gap-2"
+                    >
+                        <Plus size={18} />
+                        <span className="text-[10px] font-bold uppercase">Invitar Aliado</span>
+                    </motion.button>
+                </div>
+            )}
+
+            {unreadPings > 0 && (
+                <div className="mb-3 mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs text-white font-bold uppercase flex items-center gap-1">
+                            <Bell size={12} /> Pings ({unreadPings})
+                        </p>
+                        <button onClick={handleMarkPingsSeen} className="text-[10px] px-2 py-1 border border-white/20 rounded text-gray-300">
+                            Marcar leidos
+                        </button>
+                    </div>
+                    {unreadPingItems.slice(0, 3).map((p) => (
+                        <div key={p.id} className="text-[11px] mb-1 last:mb-0 text-gray-300">
+                            <span className="text-white">{p.fromUser.username}:</span> {p.message}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {invites.length > 0 && (
+                <div className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <p className="text-xs text-white font-bold uppercase mb-2">Invitaciones pendientes</p>
+                    {invites.map((inv) => (
+                        <div key={inv.id} className="flex items-center justify-between mb-2 last:mb-0">
+                            <span className="text-xs text-gray-300">{inv.fromUser.username}</span>
+                            <div className="flex gap-1">
+                                <button onClick={() => handleInviteResponse(inv.id, 'ACCEPT')} className="px-2 py-1 text-[10px] bg-white text-black rounded">Aceptar</button>
+                                <button onClick={() => handleInviteResponse(inv.id, 'REJECT')} className="px-2 py-1 text-[10px] border border-white/20 text-gray-400 rounded">Rechazar</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             <AnimatePresence>
                 {isAddOpen && (
                     <motion.div
@@ -92,17 +242,46 @@ export const AllyList = () => {
                         <motion.div
                             initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
                             className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl w-full max-w-sm"
-                            onClick={e => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
                         >
-                            <h3 className="text-white font-bold mb-4">Añadir Aliado</h3>
-                            <input
-                                autoFocus
-                                placeholder="Username o Link..."
-                                className="w-full bg-black/50 border border-white/10 p-3 rounded-lg text-white mb-4 outline-none focus:border-accent-neon transition-colors"
-                            />
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-white font-bold">Anadir Aliado</h3>
+                                <button onClick={() => setIsAddOpen(false)} className="text-gray-500 hover:text-white"><X size={18} /></button>
+                            </div>
+
+                            <div className="relative mb-2">
+                                <Search className="absolute left-3 top-3 text-gray-500" size={16} />
+                                <input
+                                    autoFocus
+                                    value={query}
+                                    onChange={(e) => { setQuery(e.target.value); setSelected(null); }}
+                                    placeholder="Username, email o nombre..."
+                                    className="w-full bg-black/50 border border-white/10 p-3 pl-9 rounded-lg text-white outline-none focus:border-accent-neon transition-colors"
+                                />
+                            </div>
+
+                            {isSearching && <p className="text-[11px] text-gray-500 mb-2">Buscando...</p>}
+                            {results.length > 0 && (
+                                <div className="mb-4 max-h-44 overflow-y-auto border border-white/10 rounded-lg">
+                                    {results.map((item) => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => setSelected(item)}
+                                            className={`w-full px-3 py-2 text-left border-b last:border-b-0 border-white/10 hover:bg-white/5 ${selected?.id === item.id ? 'bg-white/10' : ''}`}
+                                        >
+                                            <div className="flex justify-between items-center">
+                                                <p className="text-sm text-white">{item.username}</p>
+                                                <span className="text-[10px] font-mono text-gray-500">{item.streak > 0 ? `${item.streak} dias` : 'NUEVO'}</span>
+                                            </div>
+                                            <p className="text-[11px] text-gray-500">{item.name || item.email}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
                             <div className="flex gap-2">
-                                <button onClick={() => setIsAddOpen(false)} className="flex-1 py-3 rounded-lg bg-white text-black font-bold uppercase text-xs">
-                                    Enviar
+                                <button onClick={handleAdd} disabled={!canSubmit} className="flex-1 py-3 rounded-lg bg-white text-black font-bold uppercase text-xs disabled:opacity-50">
+                                    Solicitar
                                 </button>
                                 <button onClick={() => setIsAddOpen(false)} className="flex-1 py-3 rounded-lg border border-white/10 text-gray-400 hover:text-white font-bold uppercase text-xs">
                                     Cancelar
@@ -116,98 +295,35 @@ export const AllyList = () => {
     );
 };
 
-const AllyCard = ({ ally, isCyberpunk, onNudge, isNudged }: { ally: Ally, isCyberpunk: boolean, onNudge: () => void, isNudged: boolean }) => {
-
-    // Status Logic
-    const isBroken = ally.status === 'BROKEN';
-    const isCritical = ally.status === 'CRITICAL';
-    // const isActive = ally.status === 'ACTIVE'; // Unused
-
-    // Visual Styles
-    const borderColor = isBroken
-        ? 'border-gray-700'
-        : isCritical
-            ? 'border-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]'
-            : isCyberpunk ? 'border-orange-500 shadow-[0_0_10px_#f97316]' : 'border-orange-500';
-
-    const statusProps = {
-        ACTIVE: {
-            icon: <Flame size={14} className="text-orange-500 fill-orange-500" />,
-            label: ally.streak,
-            bg: 'bg-orange-500/10',
-            text: 'text-orange-500'
-        },
-        BROKEN: {
-            icon: <Skull size={14} className="text-gray-400" />,
-            label: 'RIP',
-            bg: 'bg-gray-800/50',
-            text: 'text-gray-400'
-        },
-        CRITICAL: {
-            icon: <AlertOctagon size={14} className="text-red-500 animate-bounce" />, // Or fading flame
-            label: '⏳',
-            bg: 'bg-red-500/10',
-            text: 'text-red-500'
-        }
-    };
-
-    const currentStatus = statusProps[ally.status];
-
-    return (
-        <motion.div
-            layout
-            className="flex flex-col items-center gap-2 snap-center cursor-pointer group min-w-[70px]"
-            onClick={() => {
-                if (isBroken || isCritical) onNudge();
-            }}
-        >
-            <div className={`relative w-14 h-14 rounded-full p-[2px] transition-all duration-500 ${borderColor} border-2 overflow-visible`}>
-                {/* Avatar Placeholder */}
-                <div className="w-full h-full rounded-full bg-neutral-800 overflow-hidden relative">
-                    {ally.img ? (
-                        <img src={ally.img} alt={ally.name} className="w-full h-full object-cover" />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-600">
-                            {ally.name.substring(0, 2).toUpperCase()}
-                        </div>
-                    )}
-
-                    {/* Critical Overlay */}
-                    {isCritical && (
-                        <div className="absolute inset-0 bg-red-500/20 animate-pulse" />
-                    )}
-
-                    {/* Broken Overlay */}
-                    {isBroken && (
-                        <div className="absolute inset-0 bg-gray-900/60 backdrop-grayscale" />
-                    )}
-                </div>
-
-                {/* Status Badge */}
-                <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-black flex items-center justify-center text-[10px] font-bold z-10 
-                    ${isBroken ? 'bg-gray-700 text-white' : 'bg-neutral-900'}
-                    ${isCritical ? 'animate-bounce bg-red-900 text-red-500' : ''}
-                 `}>
-                    {isBroken ? <Skull size={12} /> : currentStatus.icon}
+const AllyTrackerCard = ({ ally, onPing }: { ally: AllyTracker; onPing: () => void }) => (
+    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+        <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+                {ally.avatarUrl ? (
+                    <img src={ally.avatarUrl} alt={ally.username} className="w-10 h-10 rounded-full object-cover border border-white/20" />
+                ) : (
+                    <div className="w-10 h-10 rounded-full border border-white/20 bg-neutral-800 flex items-center justify-center text-xs text-gray-300 font-bold">
+                        {ally.username.slice(0, 2).toUpperCase()}
+                    </div>
+                )}
+                <div>
+                    <p className="text-sm text-white font-semibold leading-none">{ally.username}</p>
+                    <p className="text-[10px] text-gray-500 mt-1">{ally.name || ally.email}</p>
                 </div>
             </div>
+            <button onClick={onPing} className="px-2 py-1 border border-white/20 rounded text-[10px] text-gray-300 hover:text-white flex items-center gap-1">
+                <Send size={11} /> Ping
+            </button>
+        </div>
 
-            <div className="text-center">
-                <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${isBroken ? 'text-gray-600 line-through' : 'text-gray-300'}`}>
-                    {ally.name}
-                </p>
-
-                {/* Streak Count / Status Text */}
-                <div className={`text-[10px] font-mono leading-none py-0.5 px-1.5 rounded flex items-center justify-center gap-1 ${currentStatus.bg} ${currentStatus.text}`}>
-                    {isNudged ? (
-                        <span className="text-[8px] animate-pulse">SENT!</span>
-                    ) : (
-                        <>
-                            {statusProps[ally.status].label}
-                        </>
-                    )}
-                </div>
-            </div>
-        </motion.div>
-    );
-};
+        <div className="grid grid-cols-14 gap-1 w-fit">
+            {ally.activity.map((level, idx) => (
+                <div
+                    key={`${ally.id}-${idx}`}
+                    className={`w-3 h-3 rounded-[2px] ${level === 0 ? 'bg-neutral-700' : 'bg-green-500'}`}
+                    title={`Dia ${idx + 1}`}
+                />
+            ))}
+        </div>
+    </div>
+);

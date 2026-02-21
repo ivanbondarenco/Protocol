@@ -32,7 +32,8 @@ export const searchRecipes = async (query: string): Promise<{ recipes: Recipe[],
         }
 
         const data = await res.json();
-        const recipes: Recipe[] = data.map((r: any) => ({
+        const rows = Array.isArray(data) ? data : (data.recipes || []);
+        const recipes: Recipe[] = rows.map((r: any) => ({
             id: r.id,
             label: r.name,
             image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=2680&ixlib=rb-4.0.3', // Placeholder
@@ -43,10 +44,11 @@ export const searchRecipes = async (query: string): Promise<{ recipes: Recipe[],
             url: '#'
         }));
 
-        return {
-            recipes,
-            nextHref: null // wrapper for pagination if needed
-        };
+        if (recipes.length === 0) {
+            return searchMockRecipes(query);
+        }
+
+        return { recipes, nextHref: null };
     } catch (error) {
         console.error("Recipe Fetch Error:", error);
         return searchMockRecipes(query);
@@ -54,10 +56,12 @@ export const searchRecipes = async (query: string): Promise<{ recipes: Recipe[],
 };
 
 const searchMockRecipes = (query: string): { recipes: Recipe[], nextHref: string | null } => {
-    const lowerQuery = query.toLowerCase();
+    const terms = query.toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
     const matches = FUEL_SOURCES.filter(r =>
-        r.name.toLowerCase().includes(lowerQuery) ||
-        r.ingredients.some(i => i.item.toLowerCase().includes(lowerQuery))
+        terms.some(term =>
+            r.name.toLowerCase().includes(term) ||
+            r.ingredients.some(i => i.item.toLowerCase().includes(term))
+        )
     );
 
     const recipes: Recipe[] = matches.map(r => ({

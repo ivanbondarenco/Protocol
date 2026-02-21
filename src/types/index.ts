@@ -2,6 +2,8 @@ export interface Habit {
     id: string;
     title: string;
     category: string; // 'PHYSICAL' | 'MENTAL' | 'SPIRITUAL' | etc
+    repeat: 'DAILY' | 'WEEKLY';
+    repeatDays?: number[]; // 0-6 (Sunday-Saturday) when repeat = WEEKLY
 }
 
 export interface TrainingLog {
@@ -69,7 +71,7 @@ export interface ProtocolState {
     books: Book[];
     insights: Insight[];
     lastLoginDate: string;
-    theme: 'CYBERPUNK' | 'MINIMAL_DARK' | 'MINIMAL_HOLISTIC';
+    theme: 'MINIMAL_DARK' | 'MINIMAL_HOLISTIC';
 
     // Computed / Refs
     currentDay: string;
@@ -81,6 +83,8 @@ export interface ProtocolState {
     addHabit: (habit: Habit) => Promise<void>;
     removeHabit: (id: string) => Promise<void>;
     toggleHabit: (habitId: string) => Promise<void>;
+    getCurrentStreak: () => number;
+    getDailyCompletion: (date: string) => { done: number; total: number; isComplete: boolean };
 
     failMonkMode: (type: 'SCREEN' | 'GOON') => void;
     recoverMonkMode: () => void;
@@ -104,8 +108,13 @@ export interface ProtocolState {
         height: number; // cm
         weight: number; // kg
         activity: number; // 1.2 to 1.9
+        sex: 'MALE' | 'FEMALE';
+        climate: 'COLD' | 'TEMPERATE' | 'HOT';
+        trainingMinutes: number;
         goal: 'CUT' | 'MAINTAIN' | 'BULK';
         type: 'BALANCED' | 'LOW_CARB' | 'KETO' | 'HIGH_PROTEIN';
+        username?: string;
+        objectives?: string[];
         avatar?: string;
     };
     macroTargets: {
@@ -114,12 +123,17 @@ export interface ProtocolState {
         fats: number;
         calories: number;
     };
+    hydrationTargetMl: number;
     logNutrition: (macros: Partial<{ protein: number; carbs: number; fats: number; calories: number }>) => void;
     updateBioData: (data: Partial<ProtocolState['bioData']>) => void;
     recalculateTargets: () => void;
-    setTheme: (theme: 'CYBERPUNK' | 'MINIMAL_DARK' | 'MINIMAL_HOLISTIC') => void;
+    setTheme: (theme: 'MINIMAL_DARK' | 'MINIMAL_HOLISTIC') => void;
 
     // Localization
     language: 'EN' | 'ES';
     setLanguage: (lang: 'EN' | 'ES') => void;
+
+    // Onboarding
+    onboardingByUserId: Record<string, boolean>;
+    completeOnboarding: (userId: string) => void;
 }

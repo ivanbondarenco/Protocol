@@ -6,12 +6,24 @@ import { getProtocolDate } from '../lib/dateUtils';
 import { api } from '../lib/api';
 
 const DEFAULT_HABITS = [
-    { id: '1', title: 'Deep Work (4h)', category: 'MENTAL' },
-    { id: '2', title: 'Workout Protocol', category: 'PHYSICAL' },
-    { id: '3', title: 'Clean Diet', category: 'PHYSICAL' },
-    { id: '4', title: 'Reading (30m)', category: 'MENTAL' },
-    { id: '5', title: 'No Distractions', category: 'SPIRITUAL' },
+    { id: '1', title: 'Deep Work (4h)', category: 'MENTAL', repeat: 'DAILY' as const },
+    { id: '2', title: 'Workout Protocol', category: 'PHYSICAL', repeat: 'DAILY' as const },
+    { id: '3', title: 'Clean Diet', category: 'PHYSICAL', repeat: 'DAILY' as const },
+    { id: '4', title: 'Reading (30m)', category: 'MENTAL', repeat: 'DAILY' as const },
+    { id: '5', title: 'No Distractions', category: 'SPIRITUAL', repeat: 'DAILY' as const },
 ];
+
+const normalizeHabit = (habit: any) => ({
+    ...habit,
+    repeat: habit.repeat === 'WEEKLY' ? 'WEEKLY' : 'DAILY',
+    repeatDays: habit.repeat === 'WEEKLY' ? (habit.repeatDays || []) : undefined
+});
+
+const isHabitScheduledForDate = (habit: { repeat: 'DAILY' | 'WEEKLY'; repeatDays?: number[] }, dateKey: string) => {
+    if (habit.repeat === 'DAILY') return true;
+    const weekday = new Date(`${dateKey}T00:00:00`).getDay();
+    return (habit.repeatDays || []).includes(weekday);
+};
 
 export const useProtocolStore = create<ProtocolState>()(
     persist(
@@ -23,9 +35,10 @@ export const useProtocolStore = create<ProtocolState>()(
             books: [],
             insights: [],
             lastLoginDate: '',
-            theme: 'CYBERPUNK',
+            theme: 'MINIMAL_DARK',
             language: 'EN', // Default
             currentDay: getProtocolDate(),
+            onboardingByUserId: {},
 
             // Sync
             syncHabits: async () => {
@@ -53,8 +66,18 @@ export const useProtocolStore = create<ProtocolState>()(
                             mergedHistory[date].completedHabits = serverHistory[date].completedHabits;
                         });
 
+                        const localHabitMap = new Map(state.habits.map(h => [h.id, h]));
+                        const mergedHabits = (habits || []).map((h: any) => {
+                            const local = localHabitMap.get(h.id);
+                            return normalizeHabit({
+                                ...h,
+                                repeat: local?.repeat || 'DAILY',
+                                repeatDays: local?.repeatDays
+                            });
+                        });
+
                         return {
-                            habits, // Replace habits with server source of truth
+                            habits: mergedHabits.length > 0 ? mergedHabits : state.habits,
                             history: mergedHistory
                         };
                     });
@@ -66,9 +89,18 @@ export const useProtocolStore = create<ProtocolState>()(
             addHabit: async (habit) => {
                 // Optimistic? No, wait for ID from server to ensure data integrity
                 try {
-                    const newHabit = await api.post('/habits', {
+                    const response = await api.post('/habits', {
                         title: habit.title,
-                        category: habit.category
+                        category: habit.category,
+                        repeat: habit.repeat || 'DAILY',
+                        repeatDays: habit.repeat === 'WEEKLY' ? (habit.repeatDays || []) : undefined,
+                        difficulty: 2
+                    });
+                    const created = response.habit || response;
+                    const newHabit = normalizeHabit({
+                        ...created,
+                        repeat: habit.repeat || 'DAILY',
+                        repeatDays: habit.repeat === 'WEEKLY' ? (habit.repeatDays || []) : undefined
                     });
                     set((state) => ({ habits: [...state.habits, newHabit] }));
                 } catch (e) {
@@ -78,6 +110,9 @@ export const useProtocolStore = create<ProtocolState>()(
 
             setTheme: (theme) => set(() => ({ theme })),
             setLanguage: (language) => set(() => ({ language })),
+            completeOnboarding: (userId) => set((state) => ({
+                onboardingByUserId: { ...state.onboardingByUserId, [userId]: true }
+            })),
 
             removeHabit: async (id) => {
                 // Optimistic
@@ -128,6 +163,42 @@ export const useProtocolStore = create<ProtocolState>()(
                     // If fails, we should technically rollback, but syncing next time will fix it.
                     console.error("Toggle Failed", e);
                 }
+            },
+
+            getDailyCompletion: (date) => {
+                const state = get();
+                const dayLog = state.history[date];
+                const scheduled = state.habits.filter(h => isHabitScheduledForDate(h, date));
+                const total = scheduled.length;
+                const done = dayLog
+                    ? scheduled.filter(h => dayLog.completedHabits.includes(h.id)).length
+                    : 0;
+                return {
+                    done,
+                    total,
+                    isComplete: total > 0 && done === total
+                };
+            },
+
+            getCurrentStreak: () => {
+                const state = get();
+                const today = new Date();
+                let streak = 0;
+
+                for (let offset = 0; offset < 3650; offset++) {
+                    const date = new Date(today);
+                    date.setDate(today.getDate() - offset);
+                    const dateKey = date.toISOString().split('T')[0];
+                    const completion = state.getDailyCompletion(dateKey);
+
+                    if (!completion.isComplete) {
+                        break;
+                    }
+
+                    streak += 1;
+                }
+
+                return streak;
             },
 
             failMonkMode: (type) => {
@@ -337,17 +408,30 @@ export const useProtocolStore = create<ProtocolState>()(
             })),
             // AI Nutritionist State
             bioData: {
-                age: 25, height: 175, weight: 75, activity: 1.2, goal: 'MAINTAIN', type: 'BALANCED', avatar: ''
+                age: 25,
+                height: 175,
+                weight: 75,
+                activity: 1.2,
+                sex: 'MALE',
+                climate: 'TEMPERATE',
+                trainingMinutes: 45,
+                goal: 'MAINTAIN',
+                type: 'BALANCED',
+                username: '',
+                objectives: [],
+                avatar: ''
             },
             macroTargets: { protein: 200, carbs: 250, fats: 70, calories: 2800 },
+            hydrationTargetMl: 3000,
 
             updateBioData: (data) => set((state) => ({ bioData: { ...state.bioData, ...data } })),
 
             recalculateTargets: () => set((state) => {
-                const { age, height, weight, activity, goal, type } = state.bioData;
+                const { age, height, weight, activity, goal, type, sex, climate, trainingMinutes } = state.bioData;
 
                 // Mifflin-St Jeor (Male Default)
-                const bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+                const sexAdjust = sex === 'FEMALE' ? -161 : 5;
+                const bmr = 10 * weight + 6.25 * height - 5 * age + sexAdjust;
                 let tdee = bmr * activity;
 
                 // Goal Adjustment
@@ -381,13 +465,17 @@ export const useProtocolStore = create<ProtocolState>()(
                         break;
                 }
 
+                const climateBonus = climate === 'HOT' ? 700 : climate === 'COLD' ? -200 : 0;
+                const hydrationTargetMl = Math.max(1800, Math.round((weight * 35) + (trainingMinutes * 12) + climateBonus));
+
                 return {
                     macroTargets: {
                         protein: Math.round(protein),
                         carbs: Math.round(carbs),
                         fats: Math.round(fats),
                         calories
-                    }
+                    },
+                    hydrationTargetMl
                 };
             }),
             checkDailyReset: () => {

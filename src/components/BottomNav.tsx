@@ -1,4 +1,4 @@
-import { LayoutDashboard, Dumbbell, Utensils, Brain } from 'lucide-react';
+import { LayoutDashboard, Dumbbell, Utensils, Brain, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
@@ -14,6 +14,7 @@ export const BottomNav = () => {
         { icon: LayoutDashboard, label: t.NAV_DASHBOARD, path: '/' },
         { icon: Dumbbell, label: t.NAV_TRAINING, path: '/training' },
         { icon: Utensils, label: t.NAV_FUEL, path: '/fuel' },
+        { icon: Users, label: 'Social', path: '/social' },
         { icon: Brain, label: t.NAV_VAULT, path: '/vault' },
     ];
 

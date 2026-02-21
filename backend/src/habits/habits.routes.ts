@@ -7,7 +7,10 @@ import {
   getHabitById,
   updateHabit,
   deleteHabit,
-  checkInHabit,
+  toggleHabit,
+  getDailyStatus,
+  getHabitRisk,
+  rescheduleHabit,
 } from './habits.controller';
 
 const router = Router();
@@ -17,9 +20,12 @@ router.use(authenticateToken);
 
 router.post('/', createHabit);
 router.get('/', getHabits);
+router.get('/daily-status', getDailyStatus);
+router.get('/risk', getHabitRisk);
 router.get('/:id', getHabitById);
 router.put('/:id', updateHabit);
+router.put('/:id/reschedule', rescheduleHabit);
 router.delete('/:id', deleteHabit);
-router.post('/:id/check-in', checkInHabit);
+router.post('/:id/toggle', toggleHabit);
 
 export default router;

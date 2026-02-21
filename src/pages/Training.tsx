@@ -149,6 +149,28 @@ export const Training = () => {
         }).join(' ');
     }, [trainingLogs]);
 
+    const weekVolumeSeries = useMemo(() => {
+        const byDay: Record<string, number> = {};
+        trainingLogs.forEach((log) => {
+            byDay[log.date] = (byDay[log.date] || 0) + (log.volume || 0);
+        });
+        const points = Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0])).slice(-7);
+        const max = Math.max(1, ...points.map(([, v]) => v));
+        return points.map(([date, vol]) => ({ date, vol, pct: Math.round((vol / max) * 100) }));
+    }, [trainingLogs]);
+
+    const todayStats = useMemo(() => {
+        const liftLogs = todaysLogs.filter((l) => l.type === 'LIFT');
+        const cardioLogs = todaysLogs.filter((l) => l.type === 'CARDIO');
+        return {
+            count: todaysLogs.length,
+            totalVolume: Math.round(todaysLogs.reduce((acc, log) => acc + (log.volume || 0), 0)),
+            cardioMinutes: cardioLogs.reduce((acc, log) => acc + (parseInt(log.duration) || 0), 0),
+            lifts: liftLogs.length,
+            cardio: cardioLogs.length
+        };
+    }, [todaysLogs]);
+
     const handleTerminate = (intensity: string) => {
         setIsTerminateOpen(false);
         setExercise(''); setWeight(''); setReps('');
@@ -173,6 +195,24 @@ export const Training = () => {
                     <button onClick={() => setMode('CARDIO')} className={`flex-1 text-xs font-bold uppercase pb-2 ${mode === 'CARDIO' ? 'text-accent-neon border-b-2 border-accent-neon' : 'text-gray-500'}`}>{t.CARDIO}</button>
                 </div>
 
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                        <p className="text-[10px] text-gray-500 uppercase">Volumen total</p>
+                        <p className="text-lg font-bold text-white">{todayStats.totalVolume}</p>
+                    </div>
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                        <p className="text-[10px] text-gray-500 uppercase">Bloques</p>
+                        <p className="text-lg font-bold text-white">{todayStats.count}</p>
+                    </div>
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                        <p className="text-[10px] text-gray-500 uppercase">Lifts</p>
+                        <p className="text-lg font-bold text-white">{todayStats.lifts}</p>
+                    </div>
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                        <p className="text-[10px] text-gray-500 uppercase">Cardio (min)</p>
+                        <p className="text-lg font-bold text-white">{todayStats.cardioMinutes}</p>
+                    </div>
+                </div>
                 <div className="space-y-4">
                     {mode === 'LIFT' ? (
                         <>
@@ -268,12 +308,28 @@ export const Training = () => {
                 <h2 className="text-white text-sm font-bold uppercase mb-4 flex items-center gap-2">
                     <Activity size={16} /> {t.VOLUME_TREND}
                 </h2>
-                <div className="bg-carbonblack border border-white/5 h-24 p-4 relative overflow-hidden">
+                <div className="bg-carbonblack border border-white/5 p-4 relative overflow-hidden rounded-xl">
                     {chartData ? (
-                        <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 100">
-                            <polyline points={chartData} fill="none" stroke="#00f2ff" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-                        </svg>
-                    ) : <div className="text-center text-xs text-gray-600 mt-8">NO DATA</div>}
+                        <>
+                            <div className="h-24 mb-3">
+                                <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 100">
+                                    <polyline points={chartData} fill="none" stroke="#00f2ff" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                                </svg>
+                            </div>
+                            <div className="grid grid-cols-7 gap-1">
+                                {weekVolumeSeries.map((point) => (
+                                    <div key={point.date} className="text-center">
+                                        <div className="h-10 bg-white/5 rounded flex items-end">
+                                            <div className="w-full bg-accent-neon/70 rounded-b" style={{ height: `${Math.max(8, point.pct)}%` }} />
+                                        </div>
+                                        <p className="text-[9px] text-gray-500 mt-1">
+                                            {new Date(point.date).toLocaleDateString(undefined, { weekday: 'short' }).slice(0, 2)}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    ) : <div className="text-center text-xs text-gray-600 py-8">NO DATA</div>}
                 </div>
             </section>
 

@@ -25,7 +25,7 @@ const MacroItem = ({ label, current, target, colorClass }: { label: string, curr
 );
 
 export const Fuel = () => {
-    const { history, logWater, logNutrition, bioData, macroTargets, updateBioData, recalculateTargets, language } = useProtocolStore();
+    const { history, logWater, logNutrition, bioData, macroTargets, hydrationTargetMl, updateBioData, recalculateTargets, language } = useProtocolStore();
     const todayKey = getProtocolDate();
     const log = history[todayKey] || {};
     // Translation Hook
@@ -35,7 +35,7 @@ export const Fuel = () => {
     const macros = log.macros || { protein: 0, carbs: 0, fats: 0, calories: 0 };
     const burned = log.caloriesBurned || 0;
 
-    const WATER_TARGET = 3000;
+    const WATER_TARGET = hydrationTargetMl || 3000;
 
     // Net Calories Logic
     const caloriesLeft = (macroTargets.calories + burned) - macros.calories;
@@ -243,9 +243,19 @@ export const Fuel = () => {
                             className="bg-black/50 border border-white/10 text-[10px] text-white p-2 rounded outline-none focus:border-blue-400 w-full"
                             placeholder={t.SCAVENGER_PLACEHOLDER}
                             value={scavengerInput}
-                            onChange={(e) => setScavengerInput(e.target.value)}
+                            onChange={(e) => {
+                                setScavengerInput(e.target.value);
+                                setScavengerAlert(null);
+                            }}
                             onKeyDown={(e) => e.key === 'Enter' && handleScavengerSearch(false)}
                         />
+                        <button
+                            onClick={() => handleScavengerSearch(false)}
+                            disabled={isLoadingRecipes || !scavengerInput.trim()}
+                            className="w-full py-2 bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[10px] font-bold uppercase tracking-widest rounded disabled:opacity-50"
+                        >
+                            {isLoadingRecipes ? 'BUSCANDO...' : 'BUSCAR INGREDIENTES'}
+                        </button>
                     </div>
                 </NeonCard>
             </div>
@@ -512,12 +522,59 @@ export const Fuel = () => {
                     >
                         <div className="bg-carbonblack border border-white/10 p-6 rounded-lg w-full max-w-sm h-[80vh] overflow-y-auto">
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-accent-neon font-bold uppercase tracking-widest">BIO-CALIBRATION</h3>
+                                <h3 className="text-accent-neon font-bold uppercase tracking-widest">METABOLIC CALIBRATION</h3>
                                 <button onClick={() => setIsCalibrateOpen(false)}><X className="text-gray-500 hover:text-white" /></button>
                             </div>
 
                             <div className="space-y-4">
-                                {/* Personal stats moved to Dashboard */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-[10px] text-gray-500 uppercase mb-1">Edad</label>
+                                        <input type="number" value={bioData.age} onChange={(e) => updateBioData({ age: parseInt(e.target.value) || 0 })} className="w-full bg-black/50 border border-white/10 p-2 text-sm text-white rounded" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] text-gray-500 uppercase mb-1">Peso (kg)</label>
+                                        <input type="number" value={bioData.weight} onChange={(e) => updateBioData({ weight: parseFloat(e.target.value) || 0 })} className="w-full bg-black/50 border border-white/10 p-2 text-sm text-white rounded" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] text-gray-500 uppercase mb-1">Altura (cm)</label>
+                                        <input type="number" value={bioData.height} onChange={(e) => updateBioData({ height: parseInt(e.target.value) || 0 })} className="w-full bg-black/50 border border-white/10 p-2 text-sm text-white rounded" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] text-gray-500 uppercase mb-1">Entreno diario (min)</label>
+                                        <input type="number" value={bioData.trainingMinutes} onChange={(e) => updateBioData({ trainingMinutes: parseInt(e.target.value) || 0 })} className="w-full bg-black/50 border border-white/10 p-2 text-sm text-white rounded" />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs text-gray-400 uppercase mb-1">Sexo biologico</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {['MALE', 'FEMALE'].map((s) => (
+                                            <button
+                                                key={s}
+                                                onClick={() => updateBioData({ sex: s as 'MALE' | 'FEMALE' })}
+                                                className={`py-2 text-[10px] border ${bioData.sex === s ? 'border-accent-neon text-accent-neon bg-accent-neon/10' : 'border-white/10 text-gray-500'}`}
+                                            >
+                                                {s}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs text-gray-400 uppercase mb-1">Clima habitual</label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {['COLD', 'TEMPERATE', 'HOT'].map((c) => (
+                                            <button
+                                                key={c}
+                                                onClick={() => updateBioData({ climate: c as 'COLD' | 'TEMPERATE' | 'HOT' })}
+                                                className={`py-2 text-[10px] border ${bioData.climate === c ? 'border-accent-neon text-accent-neon bg-accent-neon/10' : 'border-white/10 text-gray-500'}`}
+                                            >
+                                                {c}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
 
                                 <div>
                                     <label className="block text-xs text-gray-400 uppercase mb-1">Objective</label>
@@ -547,6 +604,12 @@ export const Fuel = () => {
                                             </button>
                                         ))}
                                     </div>
+                                </div>
+
+                                <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-gray-300">
+                                    <p>Objetivo estimado post-calibracion:</p>
+                                    <p className="text-white font-semibold mt-1">{macroTargets.calories} kcal / dia</p>
+                                    <p className="text-white font-semibold">{WATER_TARGET} ml agua / dia</p>
                                 </div>
 
                                 <button onClick={handleCalibrate} className="w-full bg-accent-neon text-black font-bold py-3 mt-4 hover:bg-white transition-colors">

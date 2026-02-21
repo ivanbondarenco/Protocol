@@ -1,29 +1,36 @@
-// src/server.ts
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
-import cors from 'cors'; // Importar cors
-import authRoutes from './auth/auth.routes'; // Importar rutas de autenticación
-import habitRoutes from './habits/habits.routes'; // Importar rutas de hábitos
-import { authenticateToken } from './auth/auth.middleware'; // Importar middleware de autenticación
+import cors from 'cors';
+import authRoutes from './auth/auth.routes';
+import habitRoutes from './habits/habits.routes';
+import recipeRoutes from './recipes/recipes.routes';
+import socialRoutes from './social/social.routes';
+import onboardingRoutes from './onboarding/onboarding.routes';
+import insightsRoutes from './insights/insights.routes';
+import uploadRoutes from './upload/upload.routes';
+import exercisesRoutes from './exercises/exercises.routes';
+import path from 'path';
+import { authenticateToken } from './auth/auth.middleware';
 
 dotenv.config();
 
 const app = express();
-const prisma = new PrismaClient();
 
-app.use(express.json()); // Habilitar el parsing de JSON en las solicitudes
-app.use(cors()); // Habilitar CORS para todas las rutas
+app.use(cors());
+app.use(express.json());
 
-// Rutas de autenticación (no requieren token)
 app.use('/api/auth', authRoutes);
-
-// Rutas de hábitos (protegidas con JWT)
 app.use('/api/habits', habitRoutes);
+app.use('/api/recipes', recipeRoutes);
+app.use('/api/social', socialRoutes);
+app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/insights', insightsRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/exercises', exercisesRoutes);
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Ruta de prueba (ahora protegida con JWT)
 app.get('/api/saludo-protegido', authenticateToken, (req, res) => {
-  res.send(`¡Hola, Ivan! El backend de Protocol está en línea y esta ruta está protegida. Usuario ID: ${req.userId}`);
+  res.send(`Backend de Protocol en linea. Usuario ID: ${(req as any).userId}`);
 });
 
-export { app, prisma };
+export { app };

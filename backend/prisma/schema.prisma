@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -11,15 +11,40 @@ datasource db {
 model User {
   id           String    @id @default(uuid())
   email        String    @unique
+  username     String    @unique
   password     String
   name         String?
+  avatarUrl    String?
   level        Int       @default(1)
   points       Int       @default(0)
+  onboardingCompleted Boolean @default(false)
   // Relations
   habits       Habit[]
   habitLogs    HabitLog[]
   workouts     Workout[]
   nutrition    NutritionLog[]
+  allyshipsInitiated Allyship[] @relation("AllyshipInitiator")
+  allyshipsReceived  Allyship[] @relation("AllyshipReceiver")
+  sentInvites  AllyInvitation[] @relation("InviteSender")
+  receivedInvites AllyInvitation[] @relation("InviteReceiver")
+  createdChallenges WeeklyChallenge[] @relation("ChallengeCreator")
+  challengeParticipants WeeklyChallengeParticipant[]
+  sentPings SocialPing[] @relation("PingSender")
+  receivedPings SocialPing[] @relation("PingReceiver")
+  sparks SocialSpark[]
+  sparkVotes SocialSparkVote[]
+  sparkComments SocialSparkComment[]
+}
+
+model Allyship {
+  id          String   @id @default(uuid())
+  userId      String
+  allyUserId  String
+  createdAt   DateTime @default(now())
+  user        User     @relation("AllyshipInitiator", fields: [userId], references: [id], onDelete: Cascade)
+  allyUser    User     @relation("AllyshipReceiver", fields: [allyUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, allyUserId])
 }
 
 // --- HABITS (Dashboard) ---
@@ -28,6 +53,10 @@ model Habit {
   title     String
   category  String     // 'MINDSET', 'BODY', 'SPIRIT'
   streak    Int        @default(0)
+  repeat    String     @default("DAILY")
+  repeatDays String?
+  difficulty Int       @default(1)
+  isActive  Boolean    @default(true)
   userId    String
   user      User       @relation(fields: [userId], references: [id])
   logs      HabitLog[]
@@ -99,4 +128,91 @@ model Book {
   author String
   pages  Int
   status String @default("READING")
+}
+
+model AllyInvitation {
+  id         String   @id @default(uuid())
+  fromUserId String
+  toUserId   String
+  status     String   @default("PENDING") // PENDING | ACCEPTED | REJECTED
+  createdAt  DateTime @default(now())
+  respondedAt DateTime?
+  fromUser   User     @relation("InviteSender", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser     User     @relation("InviteReceiver", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+}
+
+model WeeklyChallenge {
+  id         String   @id @default(uuid())
+  creatorId  String
+  title      String
+  targetDays Int      @default(5)
+  startDate  DateTime
+  endDate    DateTime
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  creator    User     @relation("ChallengeCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  participants WeeklyChallengeParticipant[]
+}
+
+model WeeklyChallengeParticipant {
+  id          String   @id @default(uuid())
+  challengeId String
+  userId      String
+  progress    Int      @default(0)
+  completedDays String?
+  joinedAt    DateTime @default(now())
+  challenge   WeeklyChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+}
+
+model SocialPing {
+  id         String   @id @default(uuid())
+  fromUserId String
+  toUserId   String
+  message    String
+  seen       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  fromUser   User     @relation("PingSender", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser     User     @relation("PingReceiver", fields: [toUserId], references: [id], onDelete: Cascade)
+}
+
+model SocialSpark {
+  id         String   @id @default(uuid())
+  userId     String
+  content    String
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  votes      SocialSparkVote[]
+  comments   SocialSparkComment[]
+
+  @@index([userId, createdAt])
+}
+
+model SocialSparkVote {
+  id        String   @id @default(uuid())
+  sparkId   String
+  userId    String
+  value     Int
+  createdAt DateTime @default(now())
+  spark     SocialSpark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sparkId, userId])
+  @@index([sparkId])
+}
+
+model SocialSparkComment {
+  id        String   @id @default(uuid())
+  sparkId   String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  spark     SocialSpark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sparkId, createdAt])
 }

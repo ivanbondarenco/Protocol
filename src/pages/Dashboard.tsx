@@ -5,13 +5,15 @@ import { ProtocolToggle } from '../components/ProtocolToggle';
 import { ProgressBar } from '../components/ProgressBar';
 import { NeonCard } from '../components/NeonCard';
 import { getProtocolDate, getDisplayDate } from '../lib/dateUtils';
-import { subDays, format, addDays, isAfter } from 'date-fns';
+import { subDays, format } from 'date-fns';
 import { useMemo, useState } from 'react';
-import { Settings, Plus, X, AlertOctagon, Globe, User } from 'lucide-react';
+import { useEffect } from 'react';
+import { Settings, Plus, X, Globe, User, Activity, Users, ArrowRight, Flame } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { APP_TRANSLATIONS } from '../data/translations';
-import { SocialModule } from '../components/social/SocialModule';
 import { ProfileModal } from '../components/profile/ProfileModal';
+import { api } from '../lib/api';
+import { Link } from 'react-router-dom';
 
 // Matrix Component
 const MatrixGrid = () => {
@@ -48,24 +50,80 @@ const MatrixGrid = () => {
 };
 
 export const Dashboard = () => {
-    const { habits, toggleHabit, history, addHabit, removeHabit, gymStats, theme, setTheme, language, setLanguage, bioData } = useProtocolStore();
+    const { habits, toggleHabit, history, addHabit, removeHabit, theme, setTheme, language, setLanguage, bioData, getCurrentStreak } = useProtocolStore();
     const todayKey = getProtocolDate();
     const todayLog = history[todayKey] || { completedHabits: [] };
 
     // Translation Hook
     const t = APP_TRANSLATIONS[language];
 
-    const completedCount = todayLog.completedHabits.length;
-    const progress = habits.length > 0 ? (completedCount / habits.length) * 100 : 0;
+    const todayWeekDay = new Date().getDay();
+    const scheduledHabits = habits.filter((habit) =>
+        habit.repeat === 'DAILY' || (habit.repeat === 'WEEKLY' && (habit.repeatDays || []).includes(todayWeekDay))
+    );
+    const completedCount = scheduledHabits.filter(h => todayLog.completedHabits.includes(h.id)).length;
+    const progress = scheduledHabits.length > 0 ? (completedCount / scheduledHabits.length) * 100 : 0;
 
     // Add Habit Logic
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [newHabitTitle, setNewHabitTitle] = useState('');
     const [newHabitCat, setNewHabitCat] = useState('PHYSICAL');
+    const [newHabitRepeat, setNewHabitRepeat] = useState<'DAILY' | 'WEEKLY'>('DAILY');
+    const [newHabitDays, setNewHabitDays] = useState<number[]>([]);
 
     // Settings / Theme Logic
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [weeklyInsights, setWeeklyInsights] = useState<{ score: number; completeDays: number; recommendations: string[] } | null>(null);
+    const [isInsightsOpen, setIsInsightsOpen] = useState(false);
+    const [socialSummary, setSocialSummary] = useState<{ allies: number; invites: number; unreadPings: number; sparks: number }>({
+        allies: 0,
+        invites: 0,
+        unreadPings: 0,
+        sparks: 0
+    });
+    const currentStreak = getCurrentStreak();
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const insights = await api.get('/insights/weekly');
+                setWeeklyInsights({
+                    score: insights.score,
+                    completeDays: insights.completeDays,
+                    recommendations: insights.recommendations || []
+                });
+            } catch (e) {
+                console.error('Could not load dashboard intelligence', e);
+            }
+        };
+        load();
+    }, [history]);
+
+    useEffect(() => {
+        const loadSocialSummary = async () => {
+            try {
+                const [alliesRes, invitesRes, pingsRes, sparksRes] = await Promise.all([
+                    api.get('/social/allies'),
+                    api.get('/social/invites'),
+                    api.get('/social/pings'),
+                    api.get('/social/sparks/feed')
+                ]);
+
+                const pings = (pingsRes.pings || []) as Array<{ seen?: boolean }>;
+                setSocialSummary({
+                    allies: (alliesRes.allies || []).length,
+                    invites: (invitesRes.invitations || []).length,
+                    unreadPings: pings.filter((p) => !p.seen).length,
+                    sparks: (sparksRes.sparks || []).length
+                });
+            } catch (e) {
+                console.error('Could not load social summary', e);
+            }
+        };
+
+        loadSocialSummary();
+    }, []);
 
     const handleDelete = (id: string) => {
         if (window.confirm(t.DELETE_CONFIRM)) {
@@ -79,19 +137,15 @@ export const Dashboard = () => {
         addHabit({
             id: Date.now().toString(),
             title: newHabitTitle,
-            category: newHabitCat
+            category: newHabitCat,
+            repeat: newHabitRepeat,
+            repeatDays: newHabitRepeat === 'WEEKLY' ? newHabitDays : undefined
         });
         setNewHabitTitle('');
+        setNewHabitRepeat('DAILY');
+        setNewHabitDays([]);
         setIsAddOpen(false);
     };
-
-    // Membership Check
-    const isMembershipExpired = useMemo(() => {
-        if (!gymStats.lastPaymentDate) return false;
-        const expiry = addDays(new Date(gymStats.lastPaymentDate), 30);
-        return isAfter(new Date(), expiry);
-    }, [gymStats.lastPaymentDate]);
-
 
     // Audio Context
     const playClickSound = () => {
@@ -115,6 +169,22 @@ export const Dashboard = () => {
         if (navigator.vibrate) navigator.vibrate(5);
         playClickSound();
         toggleHabit(id);
+    };
+
+    const openInsights = async () => {
+        if (!weeklyInsights) {
+            try {
+                const insights = await api.get('/insights/weekly');
+                setWeeklyInsights({
+                    score: insights.score,
+                    completeDays: insights.completeDays,
+                    recommendations: insights.recommendations || []
+                });
+            } catch (e) {
+                console.error('Could not load weekly insights for modal', e);
+            }
+        }
+        setIsInsightsOpen(true);
     };
 
     return (
@@ -149,21 +219,44 @@ export const Dashboard = () => {
                 )}
             </AnimatePresence>
 
-            {isMembershipExpired && (
-                <div className="mb-6 bg-accent-alert/10 border border-accent-alert p-3 flex items-center gap-3 animate-pulse">
-                    <AlertOctagon className="text-accent-alert" />
+            <section className="mb-4 rounded-xl border border-orange-500/30 bg-orange-500/10 p-3">
+                <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-accent-alert font-bold text-xs uppercase">{t.MEMBERSHIP_EXPIRED}</p>
-                        <p className="text-gray-400 text-[10px]">{t.PAY_DEBT}</p>
+                        <p className="text-[10px] uppercase tracking-wider text-orange-300">Racha actual</p>
+                        <p className="text-white text-2xl font-black">{currentStreak} dias</p>
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-orange-500/15 border border-orange-400/40 flex items-center justify-center">
+                        <Flame size={20} className="text-orange-400 fill-orange-500/40" />
                     </div>
                 </div>
-            )}
+                <p className="text-[11px] text-orange-100/70 mt-1">Se mantiene automatica al completar todos tus habitos del dia.</p>
+            </section>
 
-            {/* Social Module */}
-            <SocialModule />
+            <section className="mb-5 grid grid-cols-2 gap-3">
+                <Link to="/social" className="rounded-xl border border-white/10 bg-white/5 p-3 hover:border-white/30 transition-colors">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] uppercase tracking-wider text-gray-400">Social</p>
+                        <Users size={14} className="text-gray-400" />
+                    </div>
+                    <p className="text-sm text-white font-semibold">{socialSummary.allies} aliados</p>
+                    <p className="text-[11px] text-gray-500">{socialSummary.unreadPings} pings // {socialSummary.sparks} chispas</p>
+                    <div className="mt-2 text-[10px] text-gray-400 uppercase flex items-center gap-1">
+                        Ver social <ArrowRight size={12} />
+                    </div>
+                </Link>
 
-            {/* The Matrix */}
-            <MatrixGrid />
+                <button onClick={openInsights} className="rounded-xl border border-white/10 bg-white/5 p-3 hover:border-white/30 transition-colors text-left">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] uppercase tracking-wider text-gray-400">Insights</p>
+                        <Activity size={14} className="text-gray-400" />
+                    </div>
+                    <p className="text-sm text-white font-semibold">Score {weeklyInsights?.score ?? '--'}</p>
+                    <p className="text-[11px] text-gray-500">{socialSummary.invites} invitaciones pendientes</p>
+                    <div className="mt-2 text-[10px] text-gray-400 uppercase flex items-center gap-1">
+                        Ver insights <ArrowRight size={12} />
+                    </div>
+                </button>
+            </section>
 
             <div className="mb-8 space-y-2">
                 <div className="flex justify-between text-xs uppercase tracking-wider text-gray-400">
@@ -174,7 +267,7 @@ export const Dashboard = () => {
             </div>
 
             <div className="space-y-4">
-                {habits.map((habit) => (
+                {scheduledHabits.map((habit) => (
                     <ProtocolToggle
                         key={habit.id}
                         id={habit.id}
@@ -184,14 +277,25 @@ export const Dashboard = () => {
                         onDelete={handleDelete}
                     />
                 ))}
-
-                <button
-                    onClick={() => setIsAddOpen(true)}
-                    className="w-full py-4 border border-dashed border-white/10 text-gray-500 text-xs uppercase hover:text-white hover:border-white/30 transition-all flex items-center justify-center gap-2"
-                >
-                    <Plus size={14} /> {t.ADD_PROTOCOL}
-                </button>
+                {scheduledHabits.length === 0 && (
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
+                        <p className="text-xs text-gray-300 uppercase mb-1">No hay habitos para hoy</p>
+                        <p className="text-[11px] text-gray-500">Usa el boton flotante para agregar uno rapido.</p>
+                    </div>
+                )}
             </div>
+
+            {/* The Matrix */}
+            <div className="mt-7">
+                <MatrixGrid />
+            </div>
+
+            <button
+                onClick={() => setIsAddOpen(true)}
+                className="fixed bottom-28 right-4 z-40 rounded-full bg-white text-black px-4 py-3 text-xs font-bold uppercase tracking-wider shadow-[0_12px_36px_rgba(255,255,255,0.25)] hover:scale-[1.02] transition-transform flex items-center gap-2"
+            >
+                <Plus size={14} /> {t.ADD_PROTOCOL}
+            </button>
 
             {/* Add Protocol Modal */}
             <AnimatePresence>
@@ -230,6 +334,45 @@ export const Dashboard = () => {
                                         <option value="FINANCIAL">FINANCIAL</option>
                                     </select>
                                 </div>
+                                <div>
+                                    <label className="text-xs text-gray-500 uppercase block mb-1">REPETICION</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewHabitRepeat('DAILY')}
+                                            className={`py-2 text-xs border ${newHabitRepeat === 'DAILY' ? 'border-accent-neon text-accent-neon' : 'border-white/10 text-gray-500'}`}
+                                        >
+                                            TODOS LOS DIAS
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewHabitRepeat('WEEKLY')}
+                                            className={`py-2 text-xs border ${newHabitRepeat === 'WEEKLY' ? 'border-accent-neon text-accent-neon' : 'border-white/10 text-gray-500'}`}
+                                        >
+                                            DIAS ESPECIFICOS
+                                        </button>
+                                    </div>
+                                </div>
+                                {newHabitRepeat === 'WEEKLY' && (
+                                    <div>
+                                        <label className="text-xs text-gray-500 uppercase block mb-1">DIAS</label>
+                                        <div className="grid grid-cols-7 gap-1">
+                                            {['D', 'L', 'M', 'X', 'J', 'V', 'S'].map((day, i) => {
+                                                const active = newHabitDays.includes(i);
+                                                return (
+                                                    <button
+                                                        key={day}
+                                                        type="button"
+                                                        onClick={() => setNewHabitDays(prev => prev.includes(i) ? prev.filter(d => d !== i) : [...prev, i])}
+                                                        className={`py-2 text-xs border ${active ? 'border-accent-neon text-accent-neon' : 'border-white/10 text-gray-500'}`}
+                                                    >
+                                                        {day}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                                 <button className="w-full bg-accent-neon text-black font-bold py-3 uppercase text-xs tracking-widest hover:bg-white transition-colors">
                                     {t.INIT_PROTOCOL}
                                 </button>
@@ -280,17 +423,6 @@ export const Dashboard = () => {
                                 </div>
                                 <div className="space-y-4">
                                     <button
-                                        onClick={() => setTheme('CYBERPUNK')}
-                                        className={`w-full p-4 border rounded flex items-center gap-4 transition-all ${theme === 'CYBERPUNK' ? 'border-accent-neon bg-accent-neon/10' : 'border-white/10 hover:border-white/30'}`}
-                                    >
-                                        <div className="w-8 h-8 rounded-full bg-black border border-[#00F0FF] shadow-[0_0_10px_#00F0FF]" />
-                                        <div className="text-left">
-                                            <p className="text-white font-bold text-xs uppercase">Cyberpunk</p>
-                                            <p className="text-gray-500 text-[10px]">High Contrast // Neon // Default</p>
-                                        </div>
-                                    </button>
-
-                                    <button
                                         onClick={() => setTheme('MINIMAL_DARK')}
                                         className={`w-full p-4 border rounded flex items-center gap-4 transition-all ${theme === 'MINIMAL_DARK' ? 'border-white bg-white/10' : 'border-white/10 hover:border-white/30'}`}
                                     >
@@ -326,6 +458,47 @@ export const Dashboard = () => {
                                     {t.LOGOUT}
                                 </button>
                             </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {isInsightsOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/85 z-50 p-4 flex items-center justify-center"
+                        onClick={() => setIsInsightsOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ y: 16, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 16, opacity: 0 }}
+                            className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#131313] p-5"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-sm font-bold uppercase text-white">Insights Semanales</h3>
+                                <button onClick={() => setIsInsightsOpen(false)} className="text-gray-500 hover:text-white">
+                                    <X size={16} />
+                                </button>
+                            </div>
+                            {!weeklyInsights && <p className="text-xs text-gray-500">Cargando...</p>}
+                            {weeklyInsights && (
+                                <div className="space-y-3">
+                                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                                        <p className="text-[10px] uppercase text-gray-500 mb-1">Score</p>
+                                        <p className="text-2xl font-bold text-white">{weeklyInsights.score}</p>
+                                        <p className="text-[11px] text-gray-400">Dias completos: {weeklyInsights.completeDays}/7</p>
+                                    </div>
+                                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                                        <p className="text-[10px] uppercase text-gray-500 mb-2">Recomendacion principal</p>
+                                        <p className="text-xs text-gray-300">{weeklyInsights.recommendations[0] || 'Sin recomendaciones por ahora.'}</p>
+                                    </div>
+                                </div>
+                            )}
                         </motion.div>
                     </motion.div>
                 )}

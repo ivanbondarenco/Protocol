@@ -1,14 +1,15 @@
 import { GlitchText } from '../components/GlitchText';
 import { NeonCard } from '../components/NeonCard';
-import { Plus, X, BookOpen, Zap, Minus, Brain, BookPlus, Edit2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Plus, X, BookOpen, Zap, Minus, BookPlus, Edit2, Clock3, Bold, Italic, Link2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { useProtocolStore } from '../store/useProtocolStore';
 import { AnimatePresence, motion } from 'framer-motion';
 import { APP_TRANSLATIONS } from '../data/translations';
+import { api } from '../lib/api';
 
 
 export const Vault = () => {
-    const { books, addBook, updateBookProgress, addInsight, removeBook, updateBook, language } = useProtocolStore();
+    const { books, addBook, updateBookProgress, addInsight, removeBook, updateBook, language, addIdea } = useProtocolStore();
     const t = APP_TRANSLATIONS[language];
 
     // Book Management State
@@ -79,30 +80,76 @@ export const Vault = () => {
     const [newInsightText, setNewInsightText] = useState('');
 
     // Idea Spark State
-    const [isIdeaModalOpen, setIsIdeaModalOpen] = useState(false);
     const [ideaText, setIdeaText] = useState('');
-    const { addIdea } = useProtocolStore();
+    const [shareWithAllies, setShareWithAllies] = useState(false);
+    const [publishedToday, setPublishedToday] = useState(0);
+    const [ideaError, setIdeaError] = useState<string | null>(null);
+    const [isSavingIdea, setIsSavingIdea] = useState(false);
+    const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
+    const ideaInputRef = useRef<HTMLTextAreaElement>(null);
 
-    const handleSaveIdea = (e?: React.FormEvent) => {
+    useEffect(() => {
+        const loadSparkMeta = async () => {
+            try {
+                const res = await api.get('/social/sparks/feed');
+                setPublishedToday(res.myTodayCount || 0);
+            } catch (e) {
+                console.error('Could not load spark count', e);
+            }
+        };
+        loadSparkMeta();
+    }, []);
+
+    const handleSaveIdea = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        if (!ideaText.trim()) return;
+        const normalized = ideaText.trim().replace(/\s+/g, ' ');
+        if (!normalized) return;
 
-        // Handle multi-line bullets if user pasted or typed multiple
-        const lines = ideaText.split('\n').filter(l => l.trim());
-        lines.forEach(line => addIdea(line.replace(/^[•\-\s]+/, ''))); // Strip existing bullets if any
+        if (normalized.length > 400) {
+            setIdeaError('Maximo 400 caracteres por chispa.');
+            return;
+        }
 
-        setIdeaText('');
-        setIsIdeaModalOpen(false);
+        setIdeaError(null);
+        setIsSavingIdea(true);
+        try {
+            if (shareWithAllies) {
+                const confirmed = window.confirm('Recuerda publicar informacion valiosa, esto es Protocol.');
+                if (!confirmed) return;
+                if (publishedToday >= 5) {
+                    setIdeaError('Limite diario alcanzado: maximo 5 chispas compartidas por dia.');
+                    return;
+                }
+                await api.post('/social/sparks', { content: normalized });
+                setPublishedToday((prev) => prev + 1);
+            } else {
+                addIdea(normalized);
+            }
+            setIdeaText('');
+        } catch (error: any) {
+            const msg = String(error?.message || '');
+            if (msg.includes('429')) {
+                setIdeaError('Limite diario alcanzado: maximo 5 chispas compartidas por dia.');
+            } else {
+                setIdeaError('No se pudo guardar la chispa.');
+            }
+        } finally {
+            setIsSavingIdea(false);
+        }
     };
 
-    const handleIdeaInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const val = e.target.value;
-        // Simple auto-bullet logic: if ends with newline, append bullet
-        if (val.endsWith('\n') && !val.endsWith('• ')) {
-            setIdeaText(val + '• ');
-        } else {
-            setIdeaText(val);
-        }
+    const wrapSelection = (prefix: string, suffix: string) => {
+        const el = ideaInputRef.current;
+        if (!el) return;
+        const start = el.selectionStart || 0;
+        const end = el.selectionEnd || 0;
+        const selected = ideaText.slice(start, end) || 'texto';
+        const next = `${ideaText.slice(0, start)}${prefix}${selected}${suffix}${ideaText.slice(end)}`;
+        setIdeaText(next);
+        requestAnimationFrame(() => {
+            el.focus();
+            el.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+        });
     };
 
     // Pomodoro State
@@ -162,6 +209,9 @@ export const Vault = () => {
                     <p className="text-gray-400 text-sm">{t.VAULT_SUBTITLE}</p>
                 </div>
                 <div className="flex gap-2">
+                    <button onClick={() => setIsPomodoroOpen(true)} className="bg-white/5 border border-white/10 p-2 rounded hover:bg-white/10">
+                        <Clock3 size={20} className="text-white" />
+                    </button>
 
                     <button onClick={openAddModal} className="bg-white/5 border border-white/10 p-2 rounded hover:bg-white/10">
                         <BookPlus size={20} className="text-accent-neon" />
@@ -171,60 +221,75 @@ export const Vault = () => {
                 </div>
             </header>
 
-            {/* Pomodoro Timer */}
-            <NeonCard className="mb-8 p-6 text-center relative overflow-hidden group">
-                <div className={`absolute top-0 left-0 w-1 h-full ${pomoMode === 'FOCUS' ? 'bg-accent-neon' : 'bg-blue-500'}`} />
-                <div className="flex justify-center gap-4 mb-4">
-                    <button
-                        onClick={() => resetPomo('FOCUS')}
-                        className={`text-[10px] font-bold uppercase tracking-widest ${pomoMode === 'FOCUS' ? 'text-accent-neon' : 'text-gray-600'}`}
-                    >
-                        {t.FOCUS_BTN}
-                    </button>
-                    <button
-                        onClick={() => resetPomo('BREAK')}
-                        className={`text-[10px] font-bold uppercase tracking-widest ${pomoMode === 'BREAK' ? 'text-blue-400' : 'text-gray-600'}`}
-                    >
-                        {t.BREAK_BTN}
-                    </button>
-                </div>
-
-                <div className="text-6xl font-black font-mono text-white mb-6 tracking-tighter">
-                    {formatTime(pomoTime)}
-                </div>
-
-                <button
-                    onClick={togglePomo}
-                    className={`w-16 h-16 rounded-full border-2 flex items-center justify-center mx-auto transition-all hover:scale-105 ${isPomoActive ? 'border-accent-alert text-accent-alert' : 'border-white text-white'}`}
-                >
-                    {isPomoActive ? <span className="block w-4 h-4 bg-accent-alert rounded-sm" /> : <span className="block w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-white border-b-[8px] border-b-transparent ml-1" />}
-                </button>
-            </NeonCard>
-
-            {/* Quick Capture (Idea Spark) */}
+            {/* Spark Posts */}
             <NeonCard className="mb-8 border-accent-neon/20">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-accent-neon font-bold flex items-center gap-2">
                         <Zap size={18} /> {t.IDEA_SPARK}
                     </h3>
+                    <p className="text-[10px] text-gray-500">
+                        compartidas hoy: {publishedToday}/5
+                    </p>
                 </div>
-                <div className="flex gap-2">
-                    <input
-                        type="text"
-                        value={ideaText}
-                        onChange={(e) => setIdeaText(e.target.value)}
-                        placeholder="Capture thought..."
-                        className="flex-1 bg-black/50 border border-white/10 rounded-md px-4 py-2 text-sm focus:border-accent-neon outline-none transition-all placeholder:text-gray-600"
-                        onKeyDown={(e) => e.key === 'Enter' && handleSaveIdea()}
-                    />
-                    <motion.button
-                        whileTap={{ scale: 0.95 }}
+                <p className="text-[11px] text-gray-400 mb-3">
+                    Chispas de Idea son posts sociales o individuales con contenido util, valorable o significativo para vos.
+                    Tu Vault y el de los demas son preciados.
+                </p>
+                <div className="flex items-center gap-2 mb-2">
+                    <button type="button" onClick={() => wrapSelection('**', '**')} className="p-2 rounded border border-white/10 text-gray-300 hover:text-white">
+                        <Bold size={14} />
+                    </button>
+                    <button type="button" onClick={() => wrapSelection('*', '*')} className="p-2 rounded border border-white/10 text-gray-300 hover:text-white">
+                        <Italic size={14} />
+                    </button>
+                    <button type="button" onClick={() => wrapSelection('[', '](https://)')} className="p-2 rounded border border-white/10 text-gray-300 hover:text-white">
+                        <Link2 size={14} />
+                    </button>
+                </div>
+                <textarea
+                    ref={ideaInputRef}
+                    value={ideaText}
+                    onChange={(e) => setIdeaText(e.target.value)}
+                    maxLength={400}
+                    placeholder="Escribe una chispa valiosa para ti o para tus aliados..."
+                    className="w-full min-h-[130px] bg-black/50 border border-white/10 rounded-md px-4 py-3 text-sm focus:border-accent-neon outline-none transition-all placeholder:text-gray-600 resize-y"
+                />
+                <div className="mt-3 flex items-center justify-between">
+                    <label className="flex items-center gap-2 text-[11px] text-gray-400">
+                        <input
+                            type="checkbox"
+                            checked={shareWithAllies}
+                            onChange={(e) => setShareWithAllies(e.target.checked)}
+                            className="accent-white"
+                        />
+                        Compartir con aliados (max 5/dia)
+                    </label>
+                    <p className="text-[10px] text-gray-500">{ideaText.trim().length}/400</p>
+                </div>
+                <div className="mt-3 flex gap-2">
+                    <button
                         onClick={handleSaveIdea}
-                        className="p-2 bg-accent-neon text-black rounded-md hover:opacity-80 transition-opacity"
+                        disabled={isSavingIdea}
+                        className="flex-1 p-2 bg-accent-neon text-black rounded-md hover:opacity-80 transition-opacity text-xs font-bold uppercase"
                     >
-                        <Plus size={20} />
-                    </motion.button>
+                        {shareWithAllies ? 'Publicar chispa' : 'Guardar en Vault'}
+                    </button>
+                    <button
+                        onClick={() => {
+                            setIdeaText('');
+                            setIdeaError(null);
+                        }}
+                        className="px-3 p-2 border border-white/10 text-gray-400 rounded-md text-xs uppercase"
+                    >
+                        Limpiar
+                    </button>
                 </div>
+                {ideaError && <p className="text-[11px] text-red-400 mt-2">{ideaError}</p>}
+                {!shareWithAllies && (
+                    <p className="text-[10px] text-gray-500 mt-2">
+                        Las chispas guardadas en tu Vault son ilimitadas.
+                    </p>
+                )}
             </NeonCard>
 
             {/* Book Protocols */}
@@ -310,37 +375,46 @@ export const Vault = () => {
 
 
 
-            {/* Idea Modal */}
             <AnimatePresence>
-                {isIdeaModalOpen && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 flex items-start justify-center z-50 pt-20 px-4 backdrop-blur-sm">
+                {isPomodoroOpen && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
                         <motion.div
-                            initial={{ y: -50 }} animate={{ y: 0 }}
-                            className="bg-gray-900/90 border border-accent-neon p-6 rounded-lg w-full max-w-md shadow-[0_0_30px_rgba(34,197,94,0.2)]"
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 20, opacity: 0 }}
+                            className="w-full max-w-sm rounded-xl border border-white/10 bg-[#121212] p-6"
                         >
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-accent-neon font-bold uppercase flex gap-2 items-center"><Brain size={18} /> {t.QUICK_CAPTURE}</h3>
-                                <button onClick={() => setIsIdeaModalOpen(false)}><X className="text-gray-500 hover:text-white" /></button>
+                            <div className="flex justify-between items-center mb-5">
+                                <h3 className="text-white font-bold uppercase tracking-wider flex items-center gap-2">
+                                    <Clock3 size={16} /> Pomodoro
+                                </h3>
+                                <button onClick={() => setIsPomodoroOpen(false)}><X className="text-gray-500 hover:text-white" /></button>
                             </div>
-                            <form onSubmit={handleSaveIdea}>
-                                <textarea
-                                    autoFocus
-                                    className="w-full h-32 bg-black border border-white/10 p-3 text-green-400 font-mono text-sm outline-none focus:border-accent-neon rounded"
-                                    placeholder={t.IDEA_PLACEHOLDER}
-                                    value={ideaText}
-                                    onChange={handleIdeaInput}
-                                    onKeyDown={e => {
-                                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                                            handleSaveIdea();
-                                        }
-                                    }}
-                                />
-                                <div className="flex justify-end mt-4">
-                                    <button type="submit" className="bg-accent-neon text-black font-bold px-6 py-2 uppercase text-xs tracking-wider rounded border border-accent-neon hover:bg-white hover:border-white transition-all shadow-[0_0_10px_rgba(34,197,94,0.4)]">
-                                        {t.CAPTURE_THOUGHT}
+                            <div className="text-center">
+                                <div className="flex justify-center gap-4 mb-4">
+                                    <button
+                                        onClick={() => resetPomo('FOCUS')}
+                                        className={`text-[10px] font-bold uppercase tracking-widest ${pomoMode === 'FOCUS' ? 'text-accent-neon' : 'text-gray-600'}`}
+                                    >
+                                        {t.FOCUS_BTN}
+                                    </button>
+                                    <button
+                                        onClick={() => resetPomo('BREAK')}
+                                        className={`text-[10px] font-bold uppercase tracking-widest ${pomoMode === 'BREAK' ? 'text-blue-400' : 'text-gray-600'}`}
+                                    >
+                                        {t.BREAK_BTN}
                                     </button>
                                 </div>
-                            </form>
+                                <div className="text-5xl font-black font-mono text-white mb-6 tracking-tighter">
+                                    {formatTime(pomoTime)}
+                                </div>
+                                <button
+                                    onClick={togglePomo}
+                                    className={`w-16 h-16 rounded-full border-2 flex items-center justify-center mx-auto transition-all hover:scale-105 ${isPomoActive ? 'border-accent-alert text-accent-alert' : 'border-white text-white'}`}
+                                >
+                                    {isPomoActive ? <span className="block w-4 h-4 bg-accent-alert rounded-sm" /> : <span className="block w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-white border-b-[8px] border-b-transparent ml-1" />}
+                                </button>
+                            </div>
                         </motion.div>
                     </motion.div>
                 )}
@@ -436,3 +510,4 @@ export const Vault = () => {
         </div>
     );
 };
+

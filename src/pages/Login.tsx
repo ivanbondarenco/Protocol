@@ -1,12 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/useAuthStore';
-import { GlitchText } from '../components/GlitchText';
-import { NeonCard } from '../components/NeonCard';
-import { User, Lock, ArrowRight, Mail, AlertTriangle } from 'lucide-react';
 import { APP_TRANSLATIONS } from '../data/translations';
 import { useProtocolStore } from '../store/useProtocolStore';
-import { useEffect } from 'react';
+import { ArrowRight, AlertTriangle } from 'lucide-react';
 
 export const Login = () => {
     const [isRegister, setIsRegister] = useState(false);
@@ -16,17 +13,14 @@ export const Login = () => {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    // Auth Store
     const userLogin = useAuthStore(state => state.login);
-    const { language, theme } = useProtocolStore();
+    const { language, setLanguage } = useProtocolStore();
     const t = APP_TRANSLATIONS[language];
 
     useEffect(() => {
-        // Apply Theme to body just like App.tsx
         document.body.className = '';
-        if (theme === 'MINIMAL_DARK') document.body.classList.add('minimal-dark');
-        if (theme === 'MINIMAL_HOLISTIC') document.body.classList.add('minimal-holistic');
-    }, [theme]);
+        document.body.classList.add('minimal-dark');
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -40,22 +34,17 @@ export const Login = () => {
         try {
             const res = await fetch(endpoint, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password, name: isRegister ? name : undefined }),
             });
 
             const data = await res.json();
-
             if (!res.ok) {
-                throw new Error(data.error || 'Authentication Failed');
+                throw new Error(data.error || data.message || 'Authentication Failed');
             }
 
-            // Success
             userLogin(data.token, data.user);
             window.location.href = '/';
-
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -64,119 +53,118 @@ export const Login = () => {
     };
 
     return (
-        <div className="min-h-screen bg-voidblack flex flex-col items-center justify-center p-4 relative overflow-hidden">
-            {/* Background Gradients */}
-            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(76,29,149,0.1),rgba(0,0,0,0))]" />
-
+        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-5">
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-sm z-10"
+                className="w-full max-w-sm"
             >
-                <div className="mb-8 text-center">
-                    <GlitchText text={isRegister ? t.INIT_PROTOCOL : t.SYSTEM_LOGIN} className="text-3xl justify-center mb-2" />
-                    <p className="text-gray-400 text-xs tracking-[0.2em] uppercase">
-                        {isRegister ? t.CREATE_IDENTITY : t.ACCESS_RESTRICTED}
-                    </p>
-                </div>
+                <div className="rounded-[28px] bg-[#131313] border border-white/10 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.45)]">
+                    <div className="mb-4 flex justify-end">
+                        <div className="inline-flex rounded-xl border border-white/10 overflow-hidden">
+                            <button
+                                type="button"
+                                onClick={() => setLanguage('EN')}
+                                className={`px-3 py-1.5 text-xs transition-colors ${language === 'EN' ? 'bg-white text-black' : 'bg-transparent text-gray-400 hover:text-white'}`}
+                            >
+                                English
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setLanguage('ES')}
+                                className={`px-3 py-1.5 text-xs transition-colors ${language === 'ES' ? 'bg-white text-black' : 'bg-transparent text-gray-400 hover:text-white'}`}
+                            >
+                                Español
+                            </button>
+                        </div>
+                    </div>
 
-                <NeonCard>
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="mb-7">
+                        <p className="text-[11px] tracking-[0.16em] uppercase text-gray-500 mb-2">Protocol</p>
+                        <h1 className="text-white text-[28px] leading-tight font-semibold tracking-tight">
+                            {isRegister ? 'Create your account' : 'Welcome back'}
+                        </h1>
+                        <p className="text-gray-400 text-sm mt-2">
+                            {isRegister ? t.CREATE_IDENTITY : t.ACCESS_RESTRICTED}
+                        </p>
+                    </div>
 
-                        <AnimatePresence mode='wait'>
+                    <form onSubmit={handleSubmit} className="space-y-3">
+                        <AnimatePresence mode="wait">
                             {error && (
                                 <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="bg-red-900/20 border border-red-500/50 p-3 rounded flex items-center gap-2 text-red-400 text-xs"
+                                    initial={{ opacity: 0, y: -4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -4 }}
+                                    className="bg-red-500/10 border border-red-500/40 p-3 rounded-xl flex items-center gap-2 text-red-300 text-xs"
                                 >
-                                    <AlertTriangle size={16} />
-                                    {error.toUpperCase()}
+                                    <AlertTriangle size={14} />
+                                    {error}
                                 </motion.div>
                             )}
                         </AnimatePresence>
 
-                        <div>
-                            <div className="relative group">
-                                <Mail className="absolute left-3 top-3 text-gray-500 group-focus-within:text-accent-neon transition-colors" size={18} />
-                                <input
-                                    type="email"
-                                    placeholder={t.USER_EMAIL}
-                                    className="w-full bg-black/50 border border-white/10 rounded p-3 pl-10 text-white placeholder-gray-600 focus:border-accent-neon focus:outline-none transition-colors font-mono text-sm"
-                                    value={email}
-                                    onChange={e => setEmail(e.target.value)}
-                                    required
-                                />
-                            </div>
-                        </div>
-
                         {isRegister && (
-                            <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                            >
-                                <div className="relative group mb-4">
-                                    <User className="absolute left-3 top-3 text-gray-500 group-focus-within:text-accent-neon transition-colors" size={18} />
-                                    <input
-                                        type="text"
-                                        placeholder="CODENAME"
-                                        className="w-full bg-black/50 border border-white/10 rounded p-3 pl-10 text-white placeholder-gray-600 focus:border-accent-neon focus:outline-none transition-colors font-mono text-sm"
-                                        value={name}
-                                        onChange={e => setName(e.target.value)}
-                                    />
-                                </div>
-                            </motion.div>
+                            <input
+                                type="text"
+                                placeholder="Nombre"
+                                className="w-full h-12 rounded-xl px-4 bg-[#0e0e0e] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-white/30"
+                                value={name}
+                                onChange={e => setName(e.target.value)}
+                            />
                         )}
 
-                        <div>
-                            <div className="relative group">
-                                <Lock className="absolute left-3 top-3 text-gray-500 group-focus-within:text-accent-neon transition-colors" size={18} />
-                                <input
-                                    type="password"
-                                    placeholder="ACCESS_KEY"
-                                    className="w-full bg-black/50 border border-white/10 rounded p-3 pl-10 text-white placeholder-gray-600 focus:border-accent-neon focus:outline-none transition-colors font-mono text-sm"
-                                    value={password}
-                                    onChange={e => setPassword(e.target.value)}
-                                    required
-                                />
-                            </div>
-                        </div>
+                        <input
+                            type="email"
+                            placeholder={t.USER_EMAIL}
+                            className="w-full h-12 rounded-xl px-4 bg-[#0e0e0e] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-white/30"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            required
+                        />
 
-                        <button
+                        <input
+                            type="password"
+                            placeholder="Password"
+                            className="w-full h-12 rounded-xl px-4 bg-[#0e0e0e] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-white/30"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            required
+                        />
+
+                        <motion.button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-accent-neon text-black font-bold py-3 uppercase tracking-widest hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            whileTap={{ scale: 0.98 }}
+                            whileHover={{ y: -1 }}
+                            transition={{ type: 'spring', stiffness: 380, damping: 26 }}
+                            className="relative overflow-hidden w-full h-12 rounded-xl bg-white text-black text-sm font-semibold tracking-wide hover:bg-gray-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            {loading ? (
-                                <span className="animate-pulse">CONNECTING...</span>
-                            ) : (
+                            <motion.span
+                                aria-hidden="true"
+                                initial={{ x: '-130%' }}
+                                whileTap={{ x: '130%' }}
+                                transition={{ duration: 0.45, ease: 'easeOut' }}
+                                className="absolute inset-y-0 w-16 bg-gradient-to-r from-transparent via-black/15 to-transparent"
+                            />
+                            {loading ? 'Connecting...' : (
                                 <>
-                                    {isRegister ? t.INITIALIZE : t.AUTHENTICATE} <ArrowRight size={16} />
+                                    {isRegister ? 'Create Account' : 'Sign In'} <ArrowRight size={16} />
                                 </>
                             )}
-                        </button>
+                        </motion.button>
                     </form>
-                </NeonCard>
-
-                <div className="mt-6 text-center">
-                    <button
-                        onClick={() => { setError(null); setIsRegister(!isRegister); }}
-                        className="text-gray-500 text-xs hover:text-white transition-colors uppercase tracking-wider flex items-center justify-center gap-2 mx-auto"
-                    >
-                        {isRegister ? (
-                            <> {t.ALREADY_ACCESS} <span className="text-accent-neon">{t.LOGIN}</span></>
-                        ) : (
-                            <> {t.NEW_USER} <span className="text-accent-neon">{t.REGISTER}</span></>
-                        )}
-                    </button>
                 </div>
 
+                <div className="mt-4 text-center">
+                    <button
+                        onClick={() => { setError(null); setIsRegister(!isRegister); }}
+                        className="text-gray-500 text-xs hover:text-white transition-colors"
+                    >
+                        {isRegister ? 'Already have an account? Sign in' : 'New here? Create account'}
+                    </button>
+                </div>
             </motion.div>
-
-            <div className="absolute bottom-4 text-[10px] text-gray-700 font-mono">
-                {t.SECURE_CONNECTION}
-            </div>
         </div>
     );
 };

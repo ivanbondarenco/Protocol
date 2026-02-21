@@ -5,7 +5,10 @@ interface User {
     id: string;
     email: string;
     name?: string;
-    level: number;
+    username?: string;
+    avatarUrl?: string;
+    onboardingCompleted?: boolean;
+    level?: number;
 }
 
 interface AuthState {

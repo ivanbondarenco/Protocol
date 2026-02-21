@@ -10,13 +10,17 @@ import { Pomodoro } from './pages/Pomodoro';
 import { MonkMode } from './pages/MonkMode';
 import { HabitGrid } from './pages/HabitGrid';
 import { BottomNav } from './components/BottomNav';
+import { OnboardingFlow } from './components/onboarding/OnboardingFlow';
+import { closeRealtimeSocket, getRealtimeSocket } from './services/realtimeService';
+import { Social } from './pages/Social';
 
 import { Login } from './pages/Login';
 import { useAuthStore } from './store/useAuthStore';
 
 function App() {
-  const { history, recoverMonkMode, theme, syncHabits, checkDailyReset } = useProtocolStore();
+  const { history, recoverMonkMode, theme, syncHabits, checkDailyReset, onboardingByUserId } = useProtocolStore();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated());
+  const user = useAuthStore(state => state.user);
 
   // Check Logical Day Reset
   useEffect(() => {
@@ -32,6 +36,9 @@ function App() {
   useEffect(() => {
     if (isAuthenticated) {
       syncHabits();
+      getRealtimeSocket();
+    } else {
+      closeRealtimeSocket();
     }
   }, [isAuthenticated, syncHabits]);
 
@@ -43,6 +50,8 @@ function App() {
   }, [theme]);
 
   if (!isAuthenticated) return <Login />;
+  const hasCompletedOnboarding = !!(user?.id && (onboardingByUserId[user.id] || user.onboardingCompleted));
+  if (!hasCompletedOnboarding) return <OnboardingFlow />;
 
   const handleUnlock = () => {
     recoverMonkMode();
@@ -61,6 +70,7 @@ function App() {
           <Route path="/training" element={<Training />} />
           <Route path="/fuel" element={<Fuel />} />
           <Route path="/vault" element={<Vault />} />
+          <Route path="/social" element={<Social />} />
           <Route path="/pomodoro" element={<Pomodoro />} />
           <Route path="/monk-mode" element={<MonkMode />} />
           <Route path="/grid" element={<HabitGrid />} />
