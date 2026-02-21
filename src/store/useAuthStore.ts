@@ -9,6 +9,7 @@ interface User {
     avatarUrl?: string;
     onboardingCompleted?: boolean;
     level?: number;
+    createdAt?: string;
 }
 
 interface AuthState {

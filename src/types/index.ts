@@ -71,7 +71,7 @@ export interface ProtocolState {
     books: Book[];
     insights: Insight[];
     lastLoginDate: string;
-    theme: 'MINIMAL_DARK' | 'MINIMAL_HOLISTIC';
+    theme: 'MINIMAL_DARK' | 'MINIMAL_HOLISTIC' | 'MINIMAL_LIGHT';
 
     // Computed / Refs
     currentDay: string;
@@ -127,7 +127,7 @@ export interface ProtocolState {
     logNutrition: (macros: Partial<{ protein: number; carbs: number; fats: number; calories: number }>) => void;
     updateBioData: (data: Partial<ProtocolState['bioData']>) => void;
     recalculateTargets: () => void;
-    setTheme: (theme: 'MINIMAL_DARK' | 'MINIMAL_HOLISTIC') => void;
+    setTheme: (theme: 'MINIMAL_DARK' | 'MINIMAL_HOLISTIC' | 'MINIMAL_LIGHT') => void;
 
     // Localization
     language: 'EN' | 'ES';

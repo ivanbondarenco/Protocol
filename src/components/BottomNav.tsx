@@ -19,29 +19,32 @@ export const BottomNav = () => {
     ];
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 bg-voidblack border-t border-white/10 px-6 pb-6 pt-4 z-50">
-            <div className="flex justify-between items-center max-w-md mx-auto">
+        <div className="fixed bottom-0 left-0 right-0 bg-voidblack/90 backdrop-blur-xl border-t border-white/10 px-4 pb-5 pt-3 z-50">
+            <div className="flex justify-between items-center max-w-md mx-auto gap-1">
                 {navItems.map((item) => {
                     const isActive = location.pathname === item.path;
                     return (
-                        <Link key={item.path} to={item.path} className="relative flex flex-col items-center gap-1 group">
+                        <Link key={item.path} to={item.path} className={cn(
+                            "relative flex flex-col items-center justify-center gap-1 group rounded-xl px-3 py-2 min-w-[58px] transition-colors",
+                            isActive ? "bg-white/[0.08]" : "hover:bg-white/[0.04]"
+                        )}>
                             {isActive && (
                                 <motion.div
                                     layoutId="nav-glow"
-                                    className="absolute -top-4 w-8 h-1 bg-accent-neon shadow-[0_0_10px_#00f2ff]"
+                                    className="absolute -top-[1px] w-6 h-[2px] rounded-full bg-white/75"
                                 />
                             )}
                             <item.icon
-                                size={24}
+                                size={22}
                                 className={cn(
                                     "transition-colors duration-300",
-                                    isActive ? "text-accent-neon" : "text-gray-600 group-hover:text-white"
+                                    isActive ? "text-white" : "text-gray-500 group-hover:text-gray-200"
                                 )}
                             />
                             <span className={cn(
-                                "text-[10px] uppercase font-medium tracking-wider transition-colors",
+                                "text-[9px] uppercase font-semibold tracking-[0.08em] transition-colors",
                                 "text-center",
-                                isActive ? "text-accent-neon" : "text-gray-600 group-hover:text-white"
+                                isActive ? "text-white" : "text-gray-500 group-hover:text-gray-200"
                             )}>
                                 {item.label}
                             </span>

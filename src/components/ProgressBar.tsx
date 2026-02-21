@@ -10,12 +10,12 @@ export const ProgressBar = ({ progress, className }: ProgressBarProps) => {
     const safeProgress = Math.min(Math.max(progress, 0), 100);
 
     return (
-        <div className={cn("w-full h-2 bg-white/10 relative overflow-hidden rounded-none", className)}>
+        <div className={cn("w-full h-2.5 bg-white/10 relative overflow-hidden rounded-full", className)}>
             <motion.div
-                className="h-full bg-accent-neon shadow-[0_0_10px_#00f2ff]"
+                className="h-full bg-white"
                 initial={{ width: 0 }}
                 animate={{ width: `${safeProgress}%` }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
+                transition={{ duration: 0.45, ease: "easeOut" }}
             />
         </div>
     );

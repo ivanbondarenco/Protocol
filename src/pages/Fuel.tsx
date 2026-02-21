@@ -61,9 +61,9 @@ export const Fuel = () => {
     const [isMacroViewOpen, setIsMacroViewOpen] = useState(false); // Default hidden
 
     // Dynamic Color Logic
-    let progressColor = 'bg-accent-neon';
-    if (progress >= 90 && progress <= 110) progressColor = 'bg-green-500 shadow-[0_0_10px_#22c55e]';
-    else if (progress > 110) progressColor = 'bg-accent-alert shadow-[0_0_10px_#ff003c]';
+    let progressColor = 'bg-white/70';
+    if (progress >= 90 && progress <= 110) progressColor = 'bg-green-500';
+    else if (progress > 110) progressColor = 'bg-red-500';
 
     const handleManualAdd = (e: React.FormEvent) => {
         e.preventDefault();
@@ -143,7 +143,7 @@ export const Fuel = () => {
                     <p className="text-gray-400 text-sm">{t.FUEL_SUBTITLE}</p>
                 </div>
                 <div className="flex gap-2">
-                    <button onClick={() => setIsCalibrateOpen(true)} className="text-gray-500 hover:text-accent-neon transition-colors">
+                    <button onClick={() => setIsCalibrateOpen(true)} className="text-gray-500 hover:text-white transition-colors">
                         <Settings size={20} />
                     </button>
                 </div>
@@ -153,12 +153,12 @@ export const Fuel = () => {
             <NeonCard className="mb-8 text-center py-8 relative cursor-pointer group" onClick={() => setIsMacroViewOpen(!isMacroViewOpen)}>
                 <button
                     onClick={(e) => { e.stopPropagation(); setIsQuickAddOpen(true); }}
-                    className="absolute top-4 right-4 text-accent-neon hover:text-white transition-colors z-10"
+                    className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors z-10"
                 >
                     <Plus size={24} />
                 </button>
 
-                <Flame className={`mx-auto mb-2 transition-colors ${progress > 110 ? 'text-accent-alert' : 'text-accent-neon'}`} size={32} />
+                <Flame className={`mx-auto mb-2 transition-colors ${progress > 110 ? 'text-red-400' : 'text-white'}`} size={32} />
 
                 <div className="flex flex-col items-center">
                     <span className="text-5xl font-bold font-mono text-white mb-1 transition-all">
@@ -174,11 +174,11 @@ export const Fuel = () => {
                             <span>{t.BASE}</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-accent-neon font-bold">+{burned}</span>
+                            <span className="text-white font-bold">+{burned}</span>
                             <span>{t.BURNED_LABEL}</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-accent-alert font-bold">-{Math.round(macros.calories)}</span>
+                            <span className="text-red-400 font-bold">-{Math.round(macros.calories)}</span>
                             <span>{t.EATEN}</span>
                         </div>
                     </div>
@@ -208,13 +208,13 @@ export const Fuel = () => {
                         <h2 className="text-white text-sm font-bold uppercase mb-4 flex justify-between items-center">
                             {t.MACROS_TITLE}
                             {isProteinDeficit && (
-                                <span className="text-[10px] bg-accent-alert text-black px-2 py-1 rounded font-bold animate-pulse">
+                                <span className="text-[10px] bg-red-500 text-white px-2 py-1 rounded font-bold animate-pulse">
                                     {t.PROTEIN_DEFICIT}
                                 </span>
                             )}
                         </h2>
-                        <div className={`bg-carbonblack border p-5 rounded-none transition-colors duration-500 ${isProteinDeficit ? 'border-accent-alert/50' : 'border-white/5'}`}>
-                            <MacroItem label={t.PROTEIN} current={macros.protein} target={macroTargets.protein} colorClass={isProteinDeficit ? "bg-accent-alert" : "bg-accent-neon"} />
+                        <div className={`bg-carbonblack border p-5 rounded-xl transition-colors duration-500 ${isProteinDeficit ? 'border-red-500/40' : 'border-white/10'}`}>
+                            <MacroItem label={t.PROTEIN} current={macros.protein} target={macroTargets.protein} colorClass={isProteinDeficit ? "bg-red-500" : "bg-white"} />
                             <MacroItem label={t.CARBS} current={macros.carbs} target={macroTargets.carbs} colorClass="bg-blue-500" />
                             <MacroItem label={t.FATS} current={macros.fats} target={macroTargets.fats} colorClass="bg-yellow-500" />
                         </div>
@@ -226,7 +226,7 @@ export const Fuel = () => {
             <div className="grid grid-cols-2 gap-4 mb-8">
                 <NeonCard className="p-4 cursor-pointer hover:bg-white/5 transition-colors" onClick={generateSmartFuel}>
                     <div className="flex flex-col items-center text-center gap-2">
-                        <ChefHat className="text-accent-neon" size={24} />
+                        <ChefHat className="text-white" size={24} />
                         <span className="text-xs font-bold text-white">{t.SMART_CHEF}</span>
                         <span className="text-[10px] text-gray-500">{t.GENERATE_FUEL}</span>
                     </div>
@@ -240,7 +240,7 @@ export const Fuel = () => {
                         </div>
                         <input
                             type="text"
-                            className="bg-black/50 border border-white/10 text-[10px] text-white p-2 rounded outline-none focus:border-blue-400 w-full"
+                            className="bg-black/50 border border-white/10 text-[10px] text-white p-2 rounded-xl outline-none focus:border-white/40 w-full"
                             placeholder={t.SCAVENGER_PLACEHOLDER}
                             value={scavengerInput}
                             onChange={(e) => {
@@ -252,7 +252,7 @@ export const Fuel = () => {
                         <button
                             onClick={() => handleScavengerSearch(false)}
                             disabled={isLoadingRecipes || !scavengerInput.trim()}
-                            className="w-full py-2 bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[10px] font-bold uppercase tracking-widest rounded disabled:opacity-50"
+                            className="w-full py-2 bg-white text-black border border-white text-[10px] font-bold uppercase tracking-widest rounded-xl disabled:opacity-50"
                         >
                             {isLoadingRecipes ? 'BUSCANDO...' : 'BUSCAR INGREDIENTES'}
                         </button>
@@ -262,9 +262,9 @@ export const Fuel = () => {
 
             {/* Scavenger Alerts */}
             {scavengerAlert && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 bg-accent-alert/10 border border-accent-alert/50 p-4 rounded text-center">
-                    <div className="flex justify-center mb-2"><AlertTriangle className="text-accent-alert" size={24} /></div>
-                    <div className="text-accent-alert font-bold text-xs whitespace-pre-line font-mono">{scavengerAlert}</div>
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 bg-red-500/10 border border-red-500/40 p-4 rounded-xl text-center">
+                    <div className="flex justify-center mb-2"><AlertTriangle className="text-red-400" size={24} /></div>
+                    <div className="text-red-300 font-bold text-xs whitespace-pre-line font-mono">{scavengerAlert}</div>
                 </motion.div>
             )}
 
@@ -273,7 +273,7 @@ export const Fuel = () => {
                 {smartRecipe && (
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mb-8">
                         <div
-                            className="bg-carbonblack border border-accent-neon p-4 rounded relative overflow-hidden cursor-pointer hover:bg-white/5"
+                            className="bg-carbonblack border border-white/15 p-4 rounded-xl relative overflow-hidden cursor-pointer hover:bg-white/5"
                             onClick={() => setSelectedBlueprint(smartRecipe)}
                         >
                             <div className="flex justify-between items-start mb-2">
@@ -282,10 +282,10 @@ export const Fuel = () => {
                             </div>
                             <div className="flex gap-4 text-[10px] text-gray-400 font-mono mb-4">
                                 <span>{smartRecipe.calories} kcal</span>
-                                <span className="text-accent-neon">{smartRecipe.protein}g PRO</span>
+                                <span className="text-white">{smartRecipe.protein}g PRO</span>
                                 <span>{smartRecipe.prepTime} MIN</span>
                             </div>
-                            <div className="text-[10px] text-accent-neon font-bold uppercase tracking-widest text-center border-t border-white/10 pt-2">
+                            <div className="text-[10px] text-white font-bold uppercase tracking-widest text-center border-t border-white/10 pt-2">
                                 TAP TO VIEW BLUEPRINT
                             </div>
                         </div>
@@ -299,7 +299,7 @@ export const Fuel = () => {
                                 key={recipe.id}
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className="bg-carbonblack border border-white/10 p-0 rounded overflow-hidden flex flex-col group hover:border-accent-neon transition-colors cursor-pointer"
+                                className="bg-carbonblack border border-white/10 p-0 rounded-xl overflow-hidden flex flex-col group hover:border-white/40 transition-colors cursor-pointer"
                                 onClick={() => setSelectedApiRecipe(recipe)}
                             >
                                 <div className="h-32 w-full relative">
@@ -307,7 +307,7 @@ export const Fuel = () => {
                                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
                                         <h4 className="text-white font-bold text-sm uppercase line-clamp-1">{recipe.label}</h4>
                                     </div>
-                                    <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-[10px] text-accent-neon font-mono border border-accent-neon/20">
+                                    <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-[10px] text-white font-mono border border-white/20">
                                         {recipe.calories} KCAL
                                     </div>
                                 </div>
@@ -316,7 +316,7 @@ export const Fuel = () => {
                                         <span>{recipe.protein}g PRO</span>
                                         <span>{recipe.prepTime} MIN</span>
                                     </div>
-                                    <div className="text-accent-neon text-[10px] font-bold uppercase tracking-wider">VIEW INTEL</div>
+                                    <div className="text-white text-[10px] font-bold uppercase tracking-wider">VIEW INTEL</div>
                                 </div>
                             </motion.div>
                         ))}
@@ -341,11 +341,11 @@ export const Fuel = () => {
                         className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 px-4 backdrop-blur-sm"
                         onClick={() => setSelectedApiRecipe(null)}
                     >
-                        <div className="bg-carbonblack border border-accent-neon p-0 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto relative" onClick={e => e.stopPropagation()}>
+                        <div className="bg-carbonblack border border-white/15 p-0 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto relative" onClick={e => e.stopPropagation()}>
                             <div className="h-48 w-full relative">
                                 <img src={selectedApiRecipe.image} className="w-full h-full object-cover" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-                                <button onClick={() => setSelectedApiRecipe(null)} className="absolute top-4 right-4 bg-black/50 p-2 rounded-full text-white hover:bg-accent-neon hover:text-black transition-colors">
+                                <button onClick={() => setSelectedApiRecipe(null)} className="absolute top-4 right-4 bg-black/50 p-2 rounded-full text-white hover:bg-white hover:text-black transition-colors">
                                     <X size={20} />
                                 </button>
                                 <div className="absolute bottom-4 left-4 right-4">
@@ -360,7 +360,7 @@ export const Fuel = () => {
                                         <div className="text-[10px] text-gray-500 uppercase tracking-widest">Calories</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-2xl font-mono text-accent-neon font-bold">{selectedApiRecipe.protein}g</div>
+                                        <div className="text-2xl font-mono text-white font-bold">{selectedApiRecipe.protein}g</div>
                                         <div className="text-[10px] text-gray-500 uppercase tracking-widest">Protein</div>
                                     </div>
                                     <div className="text-center">
@@ -370,13 +370,13 @@ export const Fuel = () => {
                                 </div>
 
                                 <div className="mb-6">
-                                    <h3 className="text-accent-neon text-xs font-bold uppercase mb-3 flex items-center gap-2">
+                                    <h3 className="text-white text-xs font-bold uppercase mb-3 flex items-center gap-2">
                                         <ChefHat size={14} /> {t.MATERIAL_LIST}
                                     </h3>
                                     <ul className="space-y-2">
                                         {selectedApiRecipe.ingredients.map((line, i) => (
                                             <li key={i} className="text-sm text-gray-300 flex gap-2">
-                                                <span className="text-accent-neon">•</span>
+                                                <span className="text-white">•</span>
                                                 {line}
                                             </li>
                                         ))}
@@ -388,7 +388,7 @@ export const Fuel = () => {
                                         href={selectedApiRecipe.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex-1 bg-accent-neon text-black font-bold py-3 text-center uppercase text-sm tracking-wider rounded hover:bg-white transition-colors"
+                                        className="flex-1 bg-white text-black font-bold py-3 text-center uppercase text-sm tracking-wider rounded-xl hover:bg-gray-200 transition-colors"
                                     >
                                         COOK THIS
                                     </a>
@@ -421,7 +421,7 @@ export const Fuel = () => {
                         className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 px-4 backdrop-blur-md"
                         onClick={() => setSelectedBlueprint(null)}
                     >
-                        <div className="bg-carbonblack border border-accent-neon p-6 rounded-lg w-full max-w-sm h-auto max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        <div className="bg-carbonblack border border-white/15 p-6 rounded-xl w-full max-w-sm h-auto max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                             <div className="flex justify-between items-start mb-6 border-b border-white/10 pb-4">
                                 <div>
                                     <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">FUEL BLUEPRINT</div>
@@ -444,7 +444,7 @@ export const Fuel = () => {
 
                             {/* Materials List */}
                             <div className="mb-6">
-                                <h4 className="text-xs font-bold text-accent-neon uppercase mb-2 border-b border-accent-neon/30 pb-1 inline-block">MATERIAL LIST</h4>
+                                <h4 className="text-xs font-bold text-white uppercase mb-2 border-b border-white/20 pb-1 inline-block">MATERIAL LIST</h4>
                                 <ul className="space-y-2">
                                     {selectedBlueprint.ingredients.map((ing, i) => (
                                         <li key={i} className="flex justify-between text-xs border-b border-white/5 pb-1 last:border-0">
@@ -461,7 +461,7 @@ export const Fuel = () => {
                                 <div className="grid grid-cols-3 gap-2 text-center">
                                     <div className="bg-white/5 p-2 rounded">
                                         <div className="text-[9px] text-gray-500">PRO</div>
-                                        <div className="text-accent-neon font-bold">{selectedBlueprint.protein}g</div>
+                                        <div className="text-white font-bold">{selectedBlueprint.protein}g</div>
                                     </div>
                                     <div className="bg-white/5 p-2 rounded">
                                         <div className="text-[9px] text-gray-500">CARB</div>
@@ -476,7 +476,7 @@ export const Fuel = () => {
 
                             <button
                                 onClick={() => logRecipe(selectedBlueprint)}
-                                className="w-full bg-accent-neon text-black font-bold py-3 hover:bg-white transition-colors uppercase tracking-widest shadow-[0_0_15px_rgba(0,240,255,0.3)]"
+                                className="w-full rounded-xl bg-white text-black font-bold py-3 hover:bg-gray-200 transition-colors uppercase tracking-widest"
                             >
                                 EXECUTE PROTOCOL (LOG)
                             </button>
@@ -489,9 +489,9 @@ export const Fuel = () => {
             <section>
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-white text-sm font-bold uppercase flex items-center gap-2">
-                        <Droplets size={16} className="text-blue-400" /> {t.HYDRATION_TITLE}
+                        <Droplets size={16} className="text-white" /> {t.HYDRATION_TITLE}
                     </h2>
-                    <span className="text-xs font-mono text-blue-400">{waterIntake} / {WATER_TARGET}ml</span>
+                    <span className="text-xs font-mono text-white">{waterIntake} / {WATER_TARGET}ml</span>
                 </div>
 
                 {/* Dynamic Water Bar */}
@@ -499,15 +499,15 @@ export const Fuel = () => {
                     <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${Math.min((waterIntake / WATER_TARGET) * 100, 100)}%` }}
-                        className="h-full bg-blue-500 shadow-[0_0_10px_#3b82f6]"
+                        className="h-full bg-white/75"
                     />
                 </div>
 
                 <div className="flex gap-4">
-                    <button onClick={() => logWater(250)} className="flex-1 bg-blue-500/10 border border-blue-500/30 text-blue-400 py-3 rounded text-xs font-bold hover:bg-blue-500 hover:text-white transition-colors">
+                    <button onClick={() => logWater(250)} className="flex-1 bg-white/5 border border-white/20 text-white py-3 rounded-xl text-xs font-bold hover:bg-white hover:text-black transition-colors">
                         + 250ml
                     </button>
-                    <button onClick={() => logWater(500)} className="flex-1 bg-blue-500/10 border border-blue-500/30 text-blue-400 py-3 rounded text-xs font-bold hover:bg-blue-500 hover:text-white transition-colors">
+                    <button onClick={() => logWater(500)} className="flex-1 bg-white/5 border border-white/20 text-white py-3 rounded-xl text-xs font-bold hover:bg-white hover:text-black transition-colors">
                         + 500ml
                     </button>
                 </div>
@@ -520,9 +520,9 @@ export const Fuel = () => {
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                         className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 px-4 backdrop-blur-md"
                     >
-                        <div className="bg-carbonblack border border-white/10 p-6 rounded-lg w-full max-w-sm h-[80vh] overflow-y-auto">
+                        <div className="bg-carbonblack border border-white/10 p-6 rounded-xl w-full max-w-sm h-[80vh] overflow-y-auto">
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-accent-neon font-bold uppercase tracking-widest">METABOLIC CALIBRATION</h3>
+                                <h3 className="text-white font-bold uppercase tracking-widest">METABOLIC CALIBRATION</h3>
                                 <button onClick={() => setIsCalibrateOpen(false)}><X className="text-gray-500 hover:text-white" /></button>
                             </div>
 
@@ -553,7 +553,7 @@ export const Fuel = () => {
                                             <button
                                                 key={s}
                                                 onClick={() => updateBioData({ sex: s as 'MALE' | 'FEMALE' })}
-                                                className={`py-2 text-[10px] border ${bioData.sex === s ? 'border-accent-neon text-accent-neon bg-accent-neon/10' : 'border-white/10 text-gray-500'}`}
+                                                className={`py-2 rounded-xl text-[10px] border transition-colors ${bioData.sex === s ? 'border-white/40 text-white bg-white/10' : 'border-white/10 text-gray-500 hover:text-white'}`}
                                             >
                                                 {s}
                                             </button>
@@ -568,7 +568,7 @@ export const Fuel = () => {
                                             <button
                                                 key={c}
                                                 onClick={() => updateBioData({ climate: c as 'COLD' | 'TEMPERATE' | 'HOT' })}
-                                                className={`py-2 text-[10px] border ${bioData.climate === c ? 'border-accent-neon text-accent-neon bg-accent-neon/10' : 'border-white/10 text-gray-500'}`}
+                                                className={`py-2 rounded-xl text-[10px] border transition-colors ${bioData.climate === c ? 'border-white/40 text-white bg-white/10' : 'border-white/10 text-gray-500 hover:text-white'}`}
                                             >
                                                 {c}
                                             </button>
@@ -583,7 +583,7 @@ export const Fuel = () => {
                                             <button
                                                 key={g}
                                                 onClick={() => updateBioData({ goal: g as any })}
-                                                className={`py-2 text-[10px] border ${bioData.goal === g ? 'border-accent-neon text-accent-neon bg-accent-neon/10' : 'border-white/10 text-gray-500'}`}
+                                                className={`py-2 rounded-xl text-[10px] border transition-colors ${bioData.goal === g ? 'border-white/40 text-white bg-white/10' : 'border-white/10 text-gray-500 hover:text-white'}`}
                                             >
                                                 {g}
                                             </button>
@@ -598,7 +598,7 @@ export const Fuel = () => {
                                             <button
                                                 key={t}
                                                 onClick={() => updateBioData({ type: t as any })}
-                                                className={`py-2 text-[10px] border ${bioData.type === t ? 'border-accent-neon text-accent-neon bg-accent-neon/10' : 'border-white/10 text-gray-500'}`}
+                                                className={`py-2 rounded-xl text-[10px] border transition-colors ${bioData.type === t ? 'border-white/40 text-white bg-white/10' : 'border-white/10 text-gray-500 hover:text-white'}`}
                                             >
                                                 {t.replace('_', ' ')}
                                             </button>
@@ -612,7 +612,7 @@ export const Fuel = () => {
                                     <p className="text-white font-semibold">{WATER_TARGET} ml agua / dia</p>
                                 </div>
 
-                                <button onClick={handleCalibrate} className="w-full bg-accent-neon text-black font-bold py-3 mt-4 hover:bg-white transition-colors">
+                                <button onClick={handleCalibrate} className="w-full rounded-xl bg-white text-black font-bold py-3 mt-4 hover:bg-gray-200 transition-colors">
                                     {t.CALIBRATE_SYSTEM}
                                 </button>
                             </div>
@@ -631,7 +631,7 @@ export const Fuel = () => {
                     >
                         <motion.div
                             initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
-                            className="bg-carbonblack border border-accent-neon/30 p-6 rounded-lg w-full max-w-sm shadow-[0_0_30px_rgba(0,240,255,0.1)]"
+                            className="bg-carbonblack border border-white/15 p-6 rounded-xl w-full max-w-sm shadow-[0_16px_40px_rgba(0,0,0,0.35)]"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="flex justify-between items-center mb-4">
@@ -641,11 +641,11 @@ export const Fuel = () => {
                             <form onSubmit={handleManualAdd} className="flex gap-2">
                                 <input
                                     type="number" autoFocus
-                                    className="flex-1 bg-black/50 border border-white/10 p-3 text-white text-lg font-mono focus:border-accent-neon outline-none"
+                                    className="flex-1 bg-black/50 border border-white/10 p-3 text-white text-lg font-mono focus:border-white/40 outline-none rounded-lg"
                                     placeholder="Calories..."
                                     value={quickAddValue} onChange={e => setQuickAddValue(e.target.value)}
                                 />
-                                <button type="submit" className="bg-accent-neon text-black font-bold px-4 rounded hover:bg-white transition-colors shadow-[0_0_10px_rgba(0,240,255,0.4)]">{t.ADD_BTN}</button>
+                                <button type="submit" className="bg-white text-black font-bold px-4 rounded-lg hover:bg-gray-200 transition-colors">{t.ADD_BTN}</button>
                             </form>
                             <div className="mt-4 text-[10px] text-gray-500 text-center uppercase tracking-widest">
                                 Inputting raw energy value

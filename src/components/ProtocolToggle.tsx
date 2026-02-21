@@ -11,15 +11,14 @@ interface ProtocolToggleProps {
 
 export const ProtocolToggle = ({ id, title, completed, onToggle, onDelete }: ProtocolToggleProps) => {
     return (
-        <div className="group relative flex items-center justify-between bg-carbonblack border border-white/5 p-4 cursor-pointer hover:border-accent-neon/30 transition-colors">
+        <div className="group relative flex items-center justify-between bg-[#18181b] border border-white/10 p-4 rounded-xl cursor-pointer hover:border-white/25 transition-colors">
             <div className="flex items-center gap-4 flex-1" onClick={() => onToggle(id)}>
                 <div
-                    className={`w-5 h-5 border flex items-center justify-center transition-all duration-300
-          ${completed ? 'bg-accent-neon border-accent-neon text-black shadow-[0_0_10px_#00f2ff]' : 'border-white/20'}`}
+                    className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all duration-200 ${completed ? 'bg-white border-white text-black' : 'border-white/25 bg-black/20'}`}
                 >
                     {completed && <Check size={14} strokeWidth={4} />}
                 </div>
-                <span className={`text-sm uppercase tracking-widest transition-colors ${completed ? 'text-white line-through decoration-accent-neon/50' : 'text-gray-400'}`}>
+                <span className={`text-sm uppercase tracking-[0.08em] transition-colors ${completed ? 'text-white line-through decoration-white/40' : 'text-gray-300'}`}>
                     {title}
                 </span>
             </div>
@@ -27,14 +26,11 @@ export const ProtocolToggle = ({ id, title, completed, onToggle, onDelete }: Pro
             {onDelete && (
                 <button
                     onClick={(e) => { e.stopPropagation(); onDelete(id); }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-gray-600 hover:text-accent-alert"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-gray-600 hover:text-red-300"
                 >
                     <Trash2 size={16} />
                 </button>
             )}
-
-            {/* Scanline effect */}
-            <div className="absolute inset-0 bg-[linear-gradient(transparent_0%,rgba(0,242,255,0.02)_50%,transparent_100%)] pointer-events-none opacity-0 group-hover:opacity-100" />
         </div>
     );
 };

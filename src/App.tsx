@@ -45,8 +45,15 @@ function App() {
   useEffect(() => {
     // Apply Theme
     document.body.className = ''; // Reset
-    if (theme === 'MINIMAL_DARK') document.body.classList.add('minimal-dark');
-    if (theme === 'MINIMAL_HOLISTIC') document.body.classList.add('minimal-holistic');
+    if (theme === 'MINIMAL_HOLISTIC') {
+      document.body.classList.add('minimal-holistic');
+      return;
+    }
+    if (theme === 'MINIMAL_LIGHT') {
+      document.body.classList.add('minimal-light');
+      return;
+    }
+    document.body.classList.add('minimal-dark');
   }, [theme]);
 
   if (!isAuthenticated) return <Login />;
@@ -64,7 +71,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-voidblack text-white font-sans antialiased selection:bg-accent-neon/30 selection:text-accent-neon">
+      <div className="min-h-screen bg-voidblack text-white font-sans antialiased">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/training" element={<Training />} />

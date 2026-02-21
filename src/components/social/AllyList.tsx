@@ -32,6 +32,7 @@ interface AllyTracker {
     name?: string;
     email: string;
     avatarUrl?: string;
+    accountStartDate?: string;
     activity: number[];
 }
 
@@ -256,7 +257,7 @@ export const AllyList = ({ view = 'trackers' }: { view?: 'summary' | 'trackers' 
                                     value={query}
                                     onChange={(e) => { setQuery(e.target.value); setSelected(null); }}
                                     placeholder="Username, email o nombre..."
-                                    className="w-full bg-black/50 border border-white/10 p-3 pl-9 rounded-lg text-white outline-none focus:border-accent-neon transition-colors"
+                                    className="w-full bg-black/50 border border-white/10 p-3 pl-9 rounded-lg text-white outline-none focus:border-white/40 transition-colors"
                                 />
                             </div>
 
@@ -295,35 +296,71 @@ export const AllyList = ({ view = 'trackers' }: { view?: 'summary' | 'trackers' 
     );
 };
 
-const AllyTrackerCard = ({ ally, onPing }: { ally: AllyTracker; onPing: () => void }) => (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-        <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-                {ally.avatarUrl ? (
-                    <img src={ally.avatarUrl} alt={ally.username} className="w-10 h-10 rounded-full object-cover border border-white/20" />
-                ) : (
-                    <div className="w-10 h-10 rounded-full border border-white/20 bg-neutral-800 flex items-center justify-center text-xs text-gray-300 font-bold">
-                        {ally.username.slice(0, 2).toUpperCase()}
+const resolveActivityTone = (level: number) => {
+    if (level >= 4) return 'bg-[#4dd06a]';
+    if (level === 3) return 'bg-[#35a153]';
+    if (level === 2) return 'bg-[#2a6b3d]';
+    if (level === 1) return 'bg-[#1f4028]';
+    return 'bg-[#2f3338]';
+};
+
+const AllyTrackerCard = ({ ally, onPing }: { ally: AllyTracker; onPing: () => void }) => {
+    const TOTAL_SLOTS = 70;
+    const normalized = Array.from({ length: TOTAL_SLOTS }).map((_, index) => ally.activity[index] ?? 0);
+    const weeks = Array.from({ length: 10 }).map((_, weekIndex) =>
+        normalized.slice(weekIndex * 7, weekIndex * 7 + 7)
+    );
+    const formattedStart = ally.accountStartDate
+        ? new Date(`${ally.accountStartDate}T00:00:00`).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' })
+        : null;
+
+    return (
+        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                    {ally.avatarUrl ? (
+                        <img src={ally.avatarUrl} alt={ally.username} className="w-10 h-10 rounded-full object-cover border border-white/20" />
+                    ) : (
+                        <div className="w-10 h-10 rounded-full border border-white/20 bg-neutral-800 flex items-center justify-center text-xs text-gray-300 font-bold">
+                            {ally.username.slice(0, 2).toUpperCase()}
+                        </div>
+                    )}
+                    <div>
+                        <p className="text-sm text-white font-semibold leading-none">{ally.username}</p>
+                        <p className="text-[10px] text-gray-500 mt-1">{ally.name || ally.email}</p>
                     </div>
-                )}
-                <div>
-                    <p className="text-sm text-white font-semibold leading-none">{ally.username}</p>
-                    <p className="text-[10px] text-gray-500 mt-1">{ally.name || ally.email}</p>
+                </div>
+                <button onClick={onPing} className="px-2 py-1 border border-white/20 rounded text-[10px] text-gray-300 hover:text-white flex items-center gap-1">
+                    <Send size={11} /> Ping
+                </button>
+            </div>
+
+            <div className="w-full">
+                <div className="grid w-full grid-cols-10 gap-[3px]">
+                    {weeks.map((week, weekIndex) => (
+                        <div key={`${ally.id}-w-${weekIndex}`} className="grid grid-rows-7 gap-[3px]">
+                            {week.map((level, dayIndex) => (
+                                <div
+                                    key={`${ally.id}-${weekIndex}-${dayIndex}`}
+                                    className={`aspect-square w-full rounded-[2px] border border-black/10 ${resolveActivityTone(level)}`}
+                                    title={`${ally.username} // nivel ${level}`}
+                                />
+                            ))}
+                        </div>
+                    ))}
                 </div>
             </div>
-            <button onClick={onPing} className="px-2 py-1 border border-white/20 rounded text-[10px] text-gray-300 hover:text-white flex items-center gap-1">
-                <Send size={11} /> Ping
-            </button>
+            <div className="mt-2 flex justify-between text-[9px] uppercase tracking-wider text-gray-500">
+                <span>{formattedStart ? `Inicio ${formattedStart}` : 'Inicio'}</span>
+                <div className="flex items-center gap-1">
+                    <span className="h-2.5 w-2.5 rounded-[2px] bg-[#2f3338]" />
+                    <span className="h-2.5 w-2.5 rounded-[2px] bg-[#1f4028]" />
+                    <span className="h-2.5 w-2.5 rounded-[2px] bg-[#2a6b3d]" />
+                    <span className="h-2.5 w-2.5 rounded-[2px] bg-[#35a153]" />
+                    <span className="h-2.5 w-2.5 rounded-[2px] bg-[#4dd06a]" />
+                </div>
+                <span>10 semanas</span>
+            </div>
         </div>
-
-        <div className="grid grid-cols-14 gap-1 w-fit">
-            {ally.activity.map((level, idx) => (
-                <div
-                    key={`${ally.id}-${idx}`}
-                    className={`w-3 h-3 rounded-[2px] ${level === 0 ? 'bg-neutral-700' : 'bg-green-500'}`}
-                    title={`Dia ${idx + 1}`}
-                />
-            ))}
-        </div>
-    </div>
-);
+    );
+};

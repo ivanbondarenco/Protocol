@@ -116,7 +116,7 @@ export const SparkFeed = () => {
                     </div>
 
                     <div
-                        className="text-[12px] text-gray-200 leading-relaxed mb-3 break-words [&_a]:text-accent-neon [&_a]:underline"
+                        className="text-[12px] text-gray-200 leading-relaxed mb-3 break-words [&_a]:text-white [&_a]:underline"
                         dangerouslySetInnerHTML={{ __html: markdownToHtml(spark.content) }}
                     />
 
@@ -156,4 +156,3 @@ export const SparkFeed = () => {
         </div>
     );
 };
-

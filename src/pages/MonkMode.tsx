@@ -30,8 +30,8 @@ export const MonkMode = ({ onUnlock, isLocked = false }: MonkModeProps) => {
                 transition={{ duration: 1 }}
                 className="mb-8 w-full max-w-md"
             >
-                <Lock size={64} className="text-accent-alert mx-auto mb-6 animate-pulse" />
-                <h1 className="text-4xl font-bold text-white mb-4 tracking-tighter">MONK MODE <br /><span className="text-accent-alert">ENGAGED</span></h1>
+                <Lock size={64} className="text-red-400 mx-auto mb-6 animate-pulse" />
+                <h1 className="text-4xl font-bold text-white mb-4 tracking-tighter">MONK MODE <br /><span className="text-red-400">ENGAGED</span></h1>
 
                 {isLocked ? (
                     <>
@@ -47,7 +47,7 @@ export const MonkMode = ({ onUnlock, isLocked = false }: MonkModeProps) => {
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder="I ACCEPT RESPONSIBILITY"
-                                className={`w-full bg-carbonblack border ${error ? 'border-accent-alert' : 'border-white/10'} p-3 rounded text-center text-white placeholder-gray-600 focus:outline-none focus:border-accent-neon transition-colors uppercase`}
+                                className={`w-full bg-carbonblack border ${error ? 'border-red-500' : 'border-white/10'} p-3 rounded text-center text-white placeholder-gray-600 focus:outline-none focus:border-white/40 transition-colors uppercase`}
                             />
                             <button
                                 type="submit"
@@ -67,7 +67,7 @@ export const MonkMode = ({ onUnlock, isLocked = false }: MonkModeProps) => {
 
             <div className="w-full max-w-xs h-0.5 bg-white/10 relative overflow-hidden">
                 <motion.div
-                    className="h-full bg-accent-alert"
+                    className="h-full bg-red-500"
                     animate={{ x: ['-100%', '100%'] }}
                     transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
                 />

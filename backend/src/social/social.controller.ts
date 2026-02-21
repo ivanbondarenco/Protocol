@@ -41,12 +41,18 @@ const resolveGridLevel = (done: number, total: number) => {
   return 1;
 };
 
-const buildDateWindow = (days: number) => {
-  const today = startOfDay();
+const normalizeDateStart = (date: Date) => {
+  const value = new Date(date);
+  value.setHours(0, 0, 0, 0);
+  return value;
+};
+
+const buildDateWindowFromStart = (startDate: Date, days: number) => {
+  const start = normalizeDateStart(startDate);
   const values: Date[] = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
+  for (let i = 0; i < days; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
     values.push(d);
   }
   return values;
@@ -352,20 +358,22 @@ export const getAlliesTrackers = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ message: 'Usuario no autenticado.' });
+    const today = startOfDay();
+    const TRACKER_DAYS = 70;
 
     const allyships = await prisma.allyship.findMany({
       where: { userId },
-      include: { allyUser: { select: { id: true, username: true, name: true, email: true, avatarUrl: true } } },
+      include: { allyUser: { select: { id: true, username: true, name: true, email: true, avatarUrl: true, createdAt: true } } },
       orderBy: { createdAt: 'desc' },
     });
 
-    const days = buildDateWindow(28);
-    const start = days[0];
-    const end = new Date(days[days.length - 1]);
-    end.setHours(23, 59, 59, 999);
-
     const trackers = await Promise.all(allyships.map(async (row) => {
       const allyId = row.allyUser.id;
+      const accountStart = normalizeDateStart(row.allyUser.createdAt || new Date());
+      const days = buildDateWindowFromStart(accountStart, TRACKER_DAYS);
+      const logEnd = days[days.length - 1] < today ? days[days.length - 1] : today;
+      const logEndWithTime = new Date(logEnd);
+      logEndWithTime.setHours(23, 59, 59, 999);
 
       const habits = await prisma.habit.findMany({
         where: { userId: allyId, isActive: true },
@@ -375,7 +383,7 @@ export const getAlliesTrackers = async (req: AuthRequest, res: Response) => {
         where: {
           userId: allyId,
           completed: true,
-          date: { gte: start, lte: end },
+          date: { gte: accountStart, lte: logEndWithTime },
         },
         select: { habitId: true, date: true },
       });
@@ -388,6 +396,7 @@ export const getAlliesTrackers = async (req: AuthRequest, res: Response) => {
       });
 
       const activity = days.map((day) => {
+        if (day > today) return 0;
         const key = toDateKey(day);
         const weekday = day.getDay();
         const scheduled = habits.filter((habit) =>
@@ -403,6 +412,7 @@ export const getAlliesTrackers = async (req: AuthRequest, res: Response) => {
         name: row.allyUser.name || undefined,
         email: row.allyUser.email,
         avatarUrl: row.allyUser.avatarUrl || undefined,
+        accountStartDate: toDateKey(accountStart),
         activity,
       };
     }));

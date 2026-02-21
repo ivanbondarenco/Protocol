@@ -9,21 +9,21 @@ interface GlitchTextProps {
 
 export const GlitchText = ({ text, className, size = 'lg' }: GlitchTextProps) => {
     const sizeClasses = {
-        sm: 'text-lg',
-        md: 'text-2xl',
-        lg: 'text-4xl',
-        xl: 'text-6xl',
+        sm: 'text-lg tracking-tight',
+        md: 'text-2xl tracking-tight',
+        lg: 'text-[2rem] tracking-tight',
+        xl: 'text-[3rem] tracking-tight',
     };
 
     return (
         <motion.div
-            className={cn("font-bold text-white relative inline-block", sizeClasses[size], className)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            className={cn("font-extrabold text-white relative inline-block", sizeClasses[size], className)}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.22 }}
         >
             <span className="relative z-10">{text}</span>
-            <span className="absolute left-[2px] top-0 -z-10 text-accent-alert opacity-70 animate-pulse" aria-hidden="true">{text}</span>
-            <span className="absolute -left-[2px] top-0 -z-10 text-accent-neon opacity-70 animate-pulse delay-75" aria-hidden="true">{text}</span>
+            <span className="absolute left-0 -bottom-1 h-[2px] w-10 rounded bg-white/35" aria-hidden="true" />
         </motion.div>
     );
 };

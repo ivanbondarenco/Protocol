@@ -14,7 +14,7 @@ export default {
                 'voidblack': 'var(--bg-void)', // Alias for existing code
             },
             fontFamily: {
-                sans: ['Inter', 'sans-serif'], // Stitch font
+                sans: ['Manrope', 'sans-serif'],
             },
             borderRadius: {
                 'none': '0px', // Strict sharp corners as requested for "ProgressBar"

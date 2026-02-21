@@ -1,6 +1,6 @@
 import { GlitchText } from '../components/GlitchText';
 import { NeonCard } from '../components/NeonCard';
-import { Activity, Clock, Plus, X, Search } from 'lucide-react';
+import { Clock, Plus, X, Search, ChevronDown, ChevronUp, BarChart3, CalendarDays, TrendingUp, Filter } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useProtocolStore } from '../store/useProtocolStore';
 import { getProtocolDate } from '../lib/dateUtils';
@@ -8,6 +8,23 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 import { APP_TRANSLATIONS } from '../data/translations';
 import { getExercises, createExercise, type Exercise } from '../services/exerciseService';
+
+type TrendRange = 7 | 14 | 30;
+type TrendMetric = 'VOLUME' | 'SESSIONS';
+type HistoryFilter = 'ALL' | 'LIFT' | 'CARDIO';
+
+const toDateKey = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+};
+
+const formatShortDate = (dateKey: string) =>
+    new Date(`${dateKey}T00:00:00`).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' });
+
+const formatLongDate = (dateKey: string) =>
+    new Date(`${dateKey}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
 export const Training = () => {
     const { addTrainingLog, trainingLogs, language, removeTrainingLog } = useProtocolStore();
@@ -38,6 +55,13 @@ export const Training = () => {
     // Terminate Modal
     const [isTerminateOpen, setIsTerminateOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [isStatsOpen, setIsStatsOpen] = useState(false);
+    const [trendRange, setTrendRange] = useState<TrendRange>(14);
+    const [trendMetric, setTrendMetric] = useState<TrendMetric>('VOLUME');
+    const [selectedTrendDate, setSelectedTrendDate] = useState<string | null>(null);
+    const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('ALL');
+    const [historySearch, setHistorySearch] = useState('');
+    const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
 
     // Grouped Today's Logs
     const today = getProtocolDate();
@@ -131,33 +155,32 @@ export const Training = () => {
         }
     };
 
-    // Chart Data
-    const chartData = useMemo(() => {
-        if (trainingLogs.length === 0) return null;
-        const volByDate: Record<string, number> = {};
-        [...trainingLogs].sort((a, b) => a.date.localeCompare(b.date)).forEach(l => {
-            if (l.volume) volByDate[l.date] = (volByDate[l.date] || 0) + l.volume;
+    const dailyAggregates = useMemo(() => {
+        const byDay: Record<string, { volume: number; sessions: number; cardioMinutes: number }> = {};
+        trainingLogs.forEach((log) => {
+            if (!byDay[log.date]) byDay[log.date] = { volume: 0, sessions: 0, cardioMinutes: 0 };
+            byDay[log.date].sessions += 1;
+            byDay[log.date].volume += log.volume || 0;
+            if (log.type === 'CARDIO') byDay[log.date].cardioMinutes += parseInt(log.duration) || 0;
         });
-        const dates = Object.keys(volByDate);
-        if (dates.length < 2) return "0,100 100,100"; // Flat line if not enough data
-        const vols = Object.values(volByDate);
-        const max = Math.max(...vols) || 100;
-        return dates.map((d, i) => {
-            const x = (i / (dates.length - 1)) * 100;
-            const y = 100 - ((volByDate[d] / max) * 100);
-            return `${x},${y}`;
-        }).join(' ');
+        return byDay;
     }, [trainingLogs]);
 
-    const weekVolumeSeries = useMemo(() => {
-        const byDay: Record<string, number> = {};
-        trainingLogs.forEach((log) => {
-            byDay[log.date] = (byDay[log.date] || 0) + (log.volume || 0);
-        });
-        const points = Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0])).slice(-7);
-        const max = Math.max(1, ...points.map(([, v]) => v));
-        return points.map(([date, vol]) => ({ date, vol, pct: Math.round((vol / max) * 100) }));
-    }, [trainingLogs]);
+    const buildTrendSeries = (range: number, startOffset: number) => {
+        const now = new Date();
+        const series: Array<{ date: string; volume: number; sessions: number; cardioMinutes: number }> = [];
+        for (let i = range - 1 + startOffset; i >= startOffset; i--) {
+            const d = new Date(now);
+            d.setDate(now.getDate() - i);
+            const key = toDateKey(d);
+            const agg = dailyAggregates[key] || { volume: 0, sessions: 0, cardioMinutes: 0 };
+            series.push({ date: key, volume: Math.round(agg.volume), sessions: agg.sessions, cardioMinutes: agg.cardioMinutes });
+        }
+        return series;
+    };
+
+    const trendSeries = useMemo(() => buildTrendSeries(trendRange, 0), [dailyAggregates, trendRange]);
+    const previousTrendSeries = useMemo(() => buildTrendSeries(trendRange, trendRange), [dailyAggregates, trendRange]);
 
     const todayStats = useMemo(() => {
         const liftLogs = todaysLogs.filter((l) => l.type === 'LIFT');
@@ -170,6 +193,104 @@ export const Training = () => {
             cardio: cardioLogs.length
         };
     }, [todaysLogs]);
+
+    useEffect(() => {
+        if (trendSeries.length === 0) {
+            setSelectedTrendDate(null);
+            return;
+        }
+        if (!selectedTrendDate || !trendSeries.some((point) => point.date === selectedTrendDate)) {
+            setSelectedTrendDate(trendSeries[trendSeries.length - 1].date);
+        }
+    }, [trendSeries, selectedTrendDate]);
+
+    const trendMax = useMemo(
+        () => Math.max(1, ...trendSeries.map((point) => trendMetric === 'VOLUME' ? point.volume : point.sessions)),
+        [trendSeries, trendMetric]
+    );
+
+    const trendTotal = useMemo(
+        () => trendSeries.reduce((acc, point) => acc + (trendMetric === 'VOLUME' ? point.volume : point.sessions), 0),
+        [trendSeries, trendMetric]
+    );
+
+    const previousTrendTotal = useMemo(
+        () => previousTrendSeries.reduce((acc, point) => acc + (trendMetric === 'VOLUME' ? point.volume : point.sessions), 0),
+        [previousTrendSeries, trendMetric]
+    );
+
+    const trendDeltaPct = useMemo(() => {
+        if (previousTrendTotal === 0) return trendTotal > 0 ? 100 : 0;
+        return Math.round(((trendTotal - previousTrendTotal) / previousTrendTotal) * 100);
+    }, [trendTotal, previousTrendTotal]);
+
+    const bestTrendDay = useMemo(() => {
+        if (trendSeries.length === 0) return null;
+        return trendSeries.reduce((best, current) => {
+            const bestValue = trendMetric === 'VOLUME' ? best.volume : best.sessions;
+            const currentValue = trendMetric === 'VOLUME' ? current.volume : current.sessions;
+            return currentValue > bestValue ? current : best;
+        }, trendSeries[0]);
+    }, [trendSeries, trendMetric]);
+
+    const selectedTrendPoint = useMemo(() => {
+        if (trendSeries.length === 0) return null;
+        return trendSeries.find((point) => point.date === selectedTrendDate) || trendSeries[trendSeries.length - 1];
+    }, [trendSeries, selectedTrendDate]);
+
+    const sortedLogsDesc = useMemo(
+        () => [...trainingLogs].sort((a, b) => b.date.localeCompare(a.date)),
+        [trainingLogs]
+    );
+
+    const historyRows = useMemo(() => {
+        const term = historySearch.trim().toLowerCase();
+        const byDate: Record<string, { date: string; logs: typeof trainingLogs; totalVolume: number; sessionCount: number; cardioMinutes: number }> = {};
+
+        sortedLogsDesc.forEach((log) => {
+            if (historyFilter !== 'ALL' && log.type !== historyFilter) return;
+            if (term && !log.workout.toLowerCase().includes(term)) return;
+
+            if (!byDate[log.date]) {
+                byDate[log.date] = {
+                    date: log.date,
+                    logs: [],
+                    totalVolume: 0,
+                    sessionCount: 0,
+                    cardioMinutes: 0
+                };
+            }
+
+            byDate[log.date].logs.push(log);
+            byDate[log.date].sessionCount += 1;
+            byDate[log.date].totalVolume += log.volume || 0;
+            if (log.type === 'CARDIO') byDate[log.date].cardioMinutes += parseInt(log.duration) || 0;
+        });
+
+        return Object.values(byDate).slice(0, 30);
+    }, [sortedLogsDesc, historyFilter, historySearch, trainingLogs]);
+
+    const historyTotals = useMemo(() => ({
+        days: historyRows.length,
+        sessions: historyRows.reduce((acc, row) => acc + row.sessionCount, 0),
+        volume: Math.round(historyRows.reduce((acc, row) => acc + row.totalVolume, 0)),
+        cardioMinutes: historyRows.reduce((acc, row) => acc + row.cardioMinutes, 0)
+    }), [historyRows]);
+
+    useEffect(() => {
+        if (!isHistoryOpen) return;
+        setExpandedDates((prev) => {
+            const next: Record<string, boolean> = {};
+            historyRows.forEach((row, idx) => {
+                next[row.date] = prev[row.date] ?? idx === 0;
+            });
+            return next;
+        });
+    }, [isHistoryOpen, historyRows]);
+
+    const toggleDateExpanded = (date: string) => {
+        setExpandedDates((prev) => ({ ...prev, [date]: !prev[date] }));
+    };
 
     const handleTerminate = (intensity: string) => {
         setIsTerminateOpen(false);
@@ -191,8 +312,8 @@ export const Training = () => {
             {/* Input Section */}
             <NeonCard className="mb-8 relative overflow-visible z-20">
                 <div className="flex mb-4 border-b border-white/10 pb-2">
-                    <button onClick={() => setMode('LIFT')} className={`flex-1 text-xs font-bold uppercase pb-2 ${mode === 'LIFT' ? 'text-accent-neon border-b-2 border-accent-neon' : 'text-gray-500'}`}>{t.LIFT}</button>
-                    <button onClick={() => setMode('CARDIO')} className={`flex-1 text-xs font-bold uppercase pb-2 ${mode === 'CARDIO' ? 'text-accent-neon border-b-2 border-accent-neon' : 'text-gray-500'}`}>{t.CARDIO}</button>
+                    <button onClick={() => setMode('LIFT')} className={`flex-1 text-xs font-bold uppercase pb-2 ${mode === 'LIFT' ? 'text-white border-b-2 border-white/70' : 'text-gray-500'}`}>{t.LIFT}</button>
+                    <button onClick={() => { setMode('CARDIO'); setIsStatsOpen(false); }} className={`flex-1 text-xs font-bold uppercase pb-2 ${mode === 'CARDIO' ? 'text-white border-b-2 border-white/70' : 'text-gray-500'}`}>{t.CARDIO}</button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 mb-4">
@@ -235,14 +356,14 @@ export const Training = () => {
                                     </div>
                                     <button
                                         onClick={() => setIsAddModalOpen(true)}
-                                        className="bg-accent-neon/10 border border-accent-neon/30 p-2 hover:bg-accent-neon/20"
+                                        className="bg-white/5 border border-white/20 rounded-lg p-2 hover:bg-white/10 transition-colors"
                                     >
-                                        <Plus className="text-accent-neon" size={20} />
+                                        <Plus className="text-white" size={20} />
                                     </button>
                                 </div>
 
                                 {isDropdownOpen && (
-                                    <ul className="absolute top-full left-0 right-12 bg-black border border-accent-neon/30 max-h-48 overflow-y-auto z-50 mt-1">
+                                    <ul className="absolute top-full left-0 right-12 bg-[#111] border border-white/20 rounded-lg max-h-48 overflow-y-auto z-50 mt-1">
                                         {filteredExercises.length > 0 ? (
                                             filteredExercises.map((ex) => (
                                                 <li
@@ -261,7 +382,7 @@ export const Training = () => {
                                 )}
                             </div>
 
-                            {lastHistory && <p className="text-[10px] text-accent-neon mt-1 ml-1 flex items-center gap-1"><Clock size={10} /> Last: {lastHistory}</p>}
+                            {lastHistory && <p className="text-[10px] text-gray-300 mt-1 ml-1 flex items-center gap-1"><Clock size={10} /> Last: {lastHistory}</p>}
 
                             <div className="flex gap-4">
                                 <input
@@ -280,7 +401,7 @@ export const Training = () => {
 
                             <div className="flex justify-between items-center mt-4">
                                 <div className="text-xs text-gray-500">
-                                    {t.EST_1RM}: <span className="text-accent-neon font-bold text-lg">{oneRepMax}</span>
+                                    {t.EST_1RM}: <span className="text-white font-bold text-lg">{oneRepMax}</span>
                                 </div>
                                 <button onClick={handleQuickSave} className="bg-white/5 border border-white/10 text-white px-4 py-2 font-bold text-[10px] uppercase hover:bg-white hover:text-black transition-colors">
                                     {t.LOG_SET}
@@ -296,53 +417,147 @@ export const Training = () => {
                             </div>
                             <input placeholder={t.CALS_PLACEHOLDER} type="number" className="w-full bg-black/30 border border-white/10 p-2 text-white text-sm" value={cardioCals} onChange={e => setCardioCals(e.target.value)} />
                             <div className="flex justify-end mt-4">
-                                <button onClick={handleQuickSave} className="bg-accent-neon text-black px-4 py-2 font-bold text-[10px] uppercase hover:bg-white transition-colors">{t.LOG_CARDIO}</button>
+                                <button onClick={handleQuickSave} className="bg-white text-black px-4 py-2 font-bold text-[10px] uppercase hover:bg-gray-200 transition-colors rounded-lg">{t.LOG_CARDIO}</button>
                             </div>
                         </>
                     )}
                 </div>
             </NeonCard>
 
+            <section className="mb-4">
+                <button
+                    type="button"
+                    onClick={() => setIsStatsOpen((prev) => !prev)}
+                    className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-200 hover:border-white/40 hover:bg-white/10 transition-colors flex items-center justify-between"
+                >
+                    <span className="flex items-center gap-2">
+                        <BarChart3 size={12} />
+                        {language === 'ES' ? (isStatsOpen ? 'Ocultar estadisticas' : 'Ver estadisticas') : (isStatsOpen ? 'Hide stats' : 'View stats')}
+                    </span>
+                    {isStatsOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                </button>
+            </section>
+
             {/* Chart */}
-            <section className="mb-8">
-                <h2 className="text-white text-sm font-bold uppercase mb-4 flex items-center gap-2">
-                    <Activity size={16} /> {t.VOLUME_TREND}
-                </h2>
-                <div className="bg-carbonblack border border-white/5 p-4 relative overflow-hidden rounded-xl">
-                    {chartData ? (
-                        <>
-                            <div className="h-24 mb-3">
-                                <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 100">
-                                    <polyline points={chartData} fill="none" stroke="#00f2ff" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-                                </svg>
-                            </div>
-                            <div className="grid grid-cols-7 gap-1">
-                                {weekVolumeSeries.map((point) => (
-                                    <div key={point.date} className="text-center">
-                                        <div className="h-10 bg-white/5 rounded flex items-end">
-                                            <div className="w-full bg-accent-neon/70 rounded-b" style={{ height: `${Math.max(8, point.pct)}%` }} />
-                                        </div>
-                                        <p className="text-[9px] text-gray-500 mt-1">
-                                            {new Date(point.date).toLocaleDateString(undefined, { weekday: 'short' }).slice(0, 2)}
-                                        </p>
-                                    </div>
+            {isStatsOpen && (
+                <section className="mb-8">
+                    <h2 className="text-white text-sm font-bold uppercase mb-3 flex items-center gap-2">
+                        <BarChart3 size={16} /> {t.VOLUME_TREND}
+                    </h2>
+                    <div className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                            <div className="flex items-center gap-1">
+                                {[7, 14, 30].map((range) => (
+                                    <button
+                                        key={range}
+                                        type="button"
+                                        onClick={() => setTrendRange(range as TrendRange)}
+                                        className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-colors ${trendRange === range ? 'bg-white text-black border-white' : 'border-white/10 text-gray-400 hover:text-white'}`}
+                                    >
+                                        {range}D
+                                    </button>
                                 ))}
                             </div>
-                        </>
-                    ) : <div className="text-center text-xs text-gray-600 py-8">NO DATA</div>}
-                </div>
-            </section>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setTrendMetric('VOLUME')}
+                                    className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-colors ${trendMetric === 'VOLUME' ? 'bg-white text-black border-white' : 'border-white/10 text-gray-400 hover:text-white'}`}
+                                >
+                                    Volumen
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setTrendMetric('SESSIONS')}
+                                    className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-colors ${trendMetric === 'SESSIONS' ? 'bg-white text-black border-white' : 'border-white/10 text-gray-400 hover:text-white'}`}
+                                >
+                                    Sesiones
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto pb-1">
+                            <div className="flex items-end gap-2 min-w-max">
+                                {trendSeries.map((point) => {
+                                    const value = trendMetric === 'VOLUME' ? point.volume : point.sessions;
+                                    const pct = Math.round((value / trendMax) * 100);
+                                    const selected = point.date === selectedTrendDate;
+                                    return (
+                                        <button
+                                            key={point.date}
+                                            type="button"
+                                            onClick={() => setSelectedTrendDate(point.date)}
+                                            className="flex flex-col items-center gap-1"
+                                        >
+                                            <div className={`h-24 w-5 rounded-md border ${selected ? 'border-white/60 bg-white/10' : 'border-white/10 bg-black/20'} flex items-end p-[2px]`}>
+                                                <motion.div
+                                                    initial={{ height: 0 }}
+                                                    animate={{ height: `${Math.max(6, pct)}%` }}
+                                                    transition={{ duration: 0.25 }}
+                                                    className={`w-full rounded-sm ${selected ? 'bg-white' : 'bg-white/60'}`}
+                                                />
+                                            </div>
+                                            <span className={`text-[9px] ${selected ? 'text-white' : 'text-gray-500'}`}>
+                                                {formatShortDate(point.date)}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {selectedTrendPoint && (
+                            <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
+                                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{formatLongDate(selectedTrendPoint.date)}</p>
+                                <div className="grid grid-cols-3 gap-2 text-xs">
+                                    <div>
+                                        <p className="text-gray-500">Vol</p>
+                                        <p className="text-white font-semibold">{selectedTrendPoint.volume}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-500">Sesiones</p>
+                                        <p className="text-white font-semibold">{selectedTrendPoint.sessions}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-500">Cardio min</p>
+                                        <p className="text-white font-semibold">{selectedTrendPoint.cardioMinutes}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                            <div className="rounded-lg border border-white/10 bg-black/20 p-2">
+                                <p className="text-[9px] uppercase text-gray-500">Total</p>
+                                <p className="text-sm text-white font-bold">{trendTotal}</p>
+                            </div>
+                            <div className="rounded-lg border border-white/10 bg-black/20 p-2">
+                                <p className="text-[9px] uppercase text-gray-500 flex items-center justify-center gap-1">
+                                    <TrendingUp size={10} /> Delta
+                                </p>
+                                <p className={`text-sm font-bold ${trendDeltaPct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                    {trendDeltaPct >= 0 ? '+' : ''}{trendDeltaPct}%
+                                </p>
+                            </div>
+                            <div className="rounded-lg border border-white/10 bg-black/20 p-2">
+                                <p className="text-[9px] uppercase text-gray-500">Mejor dia</p>
+                                <p className="text-xs text-white font-semibold">{bestTrendDay ? formatShortDate(bestTrendDay.date) : '--'}</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {/* Active Session */}
             <section className="mb-24">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-white text-sm font-bold uppercase flex items-center gap-2"><Clock size={16} /> {t.TODAY_SESSION}</h2>
-                    <button onClick={() => setIsHistoryOpen(true)} className="text-[10px] bg-white/10 px-3 py-1 rounded text-white hover:bg-white/20 uppercase font-bold">HISTÓRICO MES</button>
+                    <button onClick={() => setIsHistoryOpen(true)} className="text-[10px] bg-white/10 px-3 py-1 rounded text-white hover:bg-white/20 uppercase font-bold">HISTORICO MES</button>
                 </div>
                 <div className="space-y-4">
                     {todaysLogs.length > 0 ? (
                         todaysLogs.map((log) => (
-                            <NeonCard key={log.id} className="p-3 bg-carbonblack border-l-4 border-l-accent-neon flex justify-between items-center group">
+                            <NeonCard key={log.id} className="p-3 bg-[#141416] border-l-4 border-l-white/60 flex justify-between items-center group">
                                 <div>
                                     <h3 className="text-white font-bold uppercase text-xs mb-1">{log.type === 'CARDIO' ? 'CARDIO' : log.workout.match(/\((.*?)\)/)?.[1] || log.workout}</h3>
                                     <p className="text-[10px] text-gray-400 font-mono">{log.type === 'CARDIO' ? `${log.distance}km / ${log.duration}` : log.workout}</p>
@@ -356,7 +571,7 @@ export const Training = () => {
 
             {/* Terminate Button */}
             <div className="fixed bottom-24 left-0 right-0 px-4 max-w-md mx-auto z-10">
-                <button onClick={() => setIsTerminateOpen(true)} className="w-full bg-accent-alert text-black font-bold py-3 uppercase text-xs tracking-widest shadow-[0_0_15px_rgba(255,0,60,0.4)] hover:scale-[1.01] transition-transform">
+                <button onClick={() => setIsTerminateOpen(true)} className="w-full rounded-xl bg-red-500 text-white font-bold py-3 uppercase text-xs tracking-widest shadow-[0_8px_24px_rgba(0,0,0,0.35)] hover:scale-[1.01] transition-transform">
                     {t.TERMINATE_SESSION}
                 </button>
             </div>
@@ -365,8 +580,8 @@ export const Training = () => {
             <AnimatePresence>
                 {isAddModalOpen && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-6 text-center">
-                        <div className="w-full max-w-sm bg-carbonblack border border-accent-neon p-6 relative">
-                            <h3 className="text-accent-neon font-bold uppercase mb-4">ADD NEW EXERCISE</h3>
+                        <div className="w-full max-w-sm bg-[#171719] border border-white/15 rounded-2xl p-6 relative">
+                            <h3 className="text-white font-bold uppercase mb-4">ADD NEW EXERCISE</h3>
                             <input placeholder="EXERCISE NAME" className="w-full bg-black/50 border border-white/10 p-2 text-white mb-2 text-xs uppercase" value={newExName} onChange={e => setNewExName(e.target.value)} />
                             <select className="w-full bg-black/50 border border-white/10 p-2 text-white mb-4 text-xs uppercase" value={newExMuscle} onChange={e => setNewExMuscle(e.target.value)}>
                                 <option value="">SELECT MUSCLE GROUP</option>
@@ -374,7 +589,7 @@ export const Training = () => {
                             </select>
                             <div className="flex gap-2">
                                 <button onClick={() => setIsAddModalOpen(false)} className="flex-1 bg-gray-800 text-white py-2 text-xs uppercase font-bold">CANCEL</button>
-                                <button onClick={handleCreateExercise} className="flex-1 bg-accent-neon text-black py-2 text-xs uppercase font-bold">SAVE</button>
+                                <button onClick={handleCreateExercise} className="flex-1 bg-white text-black py-2 text-xs uppercase font-bold rounded-lg">SAVE</button>
                             </div>
                         </div>
                     </motion.div>
@@ -390,7 +605,7 @@ export const Training = () => {
                             <p className="text-xs text-gray-400 mb-6 uppercase tracking-widest">{t.RATE_INTENSITY}</p>
                             <div className="grid gap-3">
                                 {['WEAK', 'MAINTENANCE', 'WAR', 'DOMINATED'].map((rate, i) => (
-                                    <button key={rate} onClick={() => handleTerminate(rate)} className={`w-full py-4 border border-white/10 uppercase font-bold text-sm tracking-widest hover:bg-accent-neon hover:text-black hover:border-accent-neon transition-all ${i === 3 ? 'text-accent-neon' : 'text-gray-400'}`}>{rate}</button>
+                                    <button key={rate} onClick={() => handleTerminate(rate)} className={`w-full py-4 border border-white/10 uppercase font-bold text-sm tracking-widest hover:bg-white hover:text-black hover:border-white/60 transition-all ${i === 3 ? 'text-white' : 'text-gray-400'}`}>{rate}</button>
                                 ))}
                             </div>
                             <button onClick={() => setIsTerminateOpen(false)} className="mt-8 text-xs text-gray-600 underline uppercase">{t.CANCEL}</button>
@@ -402,25 +617,101 @@ export const Training = () => {
             {/* History Modal */}
             <AnimatePresence>
                 {isHistoryOpen && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 z-50 p-6 overflow-y-auto">
-                        <div className="flex justify-between mb-6">
-                            <h3 className="text-accent-neon font-bold uppercase">HISTORY (30 DAYS)</h3>
-                            <button onClick={() => setIsHistoryOpen(false)}><X className="text-gray-500 hover:text-white" /></button>
-                        </div>
-                        <div className="space-y-6">
-                            {Array.from(new Set(trainingLogs.map(l => l.date))).slice(0, 30).map(date => (
-                                <div key={date}>
-                                    <h4 className="text-white text-xs font-bold bg-white/10 px-2 py-1 mb-2 inline-block rounded">{new Date(date).toLocaleDateString()}</h4>
-                                    <div className="space-y-2 pl-2 border-l border-white/10">
-                                        {trainingLogs.filter(l => l.date === date).map(log => (
-                                            <div key={log.id} className="text-[10px] text-gray-400 flex justify-between">
-                                                <span>{log.workout}</span>
-                                                <span className="text-accent-neon">{log.volume} vol</span>
-                                            </div>
-                                        ))}
-                                    </div>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 z-50 p-4 overflow-y-auto backdrop-blur-sm">
+                        <div className="w-full max-w-md mx-auto rounded-2xl border border-white/10 bg-[#0f1110]/95 p-4">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-white font-bold uppercase text-sm flex items-center gap-2">
+                                    <CalendarDays size={14} /> Historico del mes
+                                </h3>
+                                <button onClick={() => setIsHistoryOpen(false)}><X className="text-gray-500 hover:text-white" /></button>
+                            </div>
+
+                            <div className="grid grid-cols-4 gap-2 mb-3">
+                                <button type="button" onClick={() => setHistoryFilter('ALL')} className={`py-2 rounded-lg text-[10px] font-bold uppercase border ${historyFilter === 'ALL' ? 'bg-white text-black border-white' : 'border-white/10 text-gray-400 hover:text-white'}`}>Todo</button>
+                                <button type="button" onClick={() => setHistoryFilter('LIFT')} className={`py-2 rounded-lg text-[10px] font-bold uppercase border ${historyFilter === 'LIFT' ? 'bg-white text-black border-white' : 'border-white/10 text-gray-400 hover:text-white'}`}>LIFT</button>
+                                <button type="button" onClick={() => setHistoryFilter('CARDIO')} className={`py-2 rounded-lg text-[10px] font-bold uppercase border ${historyFilter === 'CARDIO' ? 'bg-white text-black border-white' : 'border-white/10 text-gray-400 hover:text-white'}`}>CARDIO</button>
+                                <div className="py-2 rounded-lg text-[10px] font-bold uppercase border border-white/10 text-gray-500 flex items-center justify-center gap-1">
+                                    <Filter size={10} /> Filtro
                                 </div>
-                            ))}
+                            </div>
+
+                            <div className="relative mb-3">
+                                <Search size={14} className="absolute left-3 top-2.5 text-gray-500" />
+                                <input
+                                    value={historySearch}
+                                    onChange={(e) => setHistorySearch(e.target.value)}
+                                    placeholder="Buscar por ejercicio..."
+                                    className="w-full rounded-lg bg-black/40 border border-white/10 pl-9 pr-3 py-2 text-xs text-white outline-none focus:border-white/40"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-4 gap-2 mb-4 text-center">
+                                <div className="rounded-lg border border-white/10 bg-white/5 p-2">
+                                    <p className="text-[9px] text-gray-500 uppercase">Dias</p>
+                                    <p className="text-sm text-white font-bold">{historyTotals.days}</p>
+                                </div>
+                                <div className="rounded-lg border border-white/10 bg-white/5 p-2">
+                                    <p className="text-[9px] text-gray-500 uppercase">Sesiones</p>
+                                    <p className="text-sm text-white font-bold">{historyTotals.sessions}</p>
+                                </div>
+                                <div className="rounded-lg border border-white/10 bg-white/5 p-2">
+                                    <p className="text-[9px] text-gray-500 uppercase">Vol</p>
+                                    <p className="text-sm text-white font-bold">{historyTotals.volume}</p>
+                                </div>
+                                <div className="rounded-lg border border-white/10 bg-white/5 p-2">
+                                    <p className="text-[9px] text-gray-500 uppercase">Cardio</p>
+                                    <p className="text-sm text-white font-bold">{historyTotals.cardioMinutes}m</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2 max-h-[58vh] overflow-y-auto pr-1">
+                                {historyRows.length === 0 && (
+                                    <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center text-xs text-gray-500">
+                                        Sin datos para ese filtro.
+                                    </div>
+                                )}
+
+                                {historyRows.map((row) => {
+                                    const isOpen = !!expandedDates[row.date];
+                                    return (
+                                        <div key={row.date} className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleDateExpanded(row.date)}
+                                                className="w-full px-3 py-2.5 flex items-center justify-between text-left"
+                                            >
+                                                <div>
+                                                    <p className="text-xs text-white font-semibold">{formatLongDate(row.date)}</p>
+                                                    <p className="text-[10px] text-gray-500">{row.sessionCount} sesiones // {Math.round(row.totalVolume)} vol // {row.cardioMinutes}m cardio</p>
+                                                </div>
+                                                {isOpen ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+                                            </button>
+
+                                            {isOpen && (
+                                                <div className="px-3 pb-3 space-y-2">
+                                                    {row.logs.map((log) => (
+                                                        <div key={log.id} className="rounded-lg border border-white/10 bg-black/30 px-2.5 py-2 flex items-center justify-between gap-3">
+                                                            <div className="min-w-0">
+                                                                <p className="text-[11px] text-white truncate">{log.workout}</p>
+                                                                <p className="text-[10px] text-gray-500">
+                                                                    {log.type === 'CARDIO'
+                                                                        ? `${log.duration} // ${log.calories || 0} kcal`
+                                                                        : `LIFT // ${Math.round(log.volume || 0)} vol`}
+                                                                </p>
+                                                            </div>
+                                                            <span className="text-[11px] font-semibold text-white shrink-0">
+                                                                {log.type === 'CARDIO'
+                                                                    ? `${log.distance || 0} km`
+                                                                    : `${Math.round(log.volume || 0)} vol`}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </motion.div>
                 )}

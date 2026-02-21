@@ -214,7 +214,7 @@ export const Vault = () => {
                     </button>
 
                     <button onClick={openAddModal} className="bg-white/5 border border-white/10 p-2 rounded hover:bg-white/10">
-                        <BookPlus size={20} className="text-accent-neon" />
+                        <BookPlus size={20} className="text-white" />
                     </button>
                     {/* Removed old idea modal button */}
                     {/* Removed old search open button */}
@@ -222,9 +222,9 @@ export const Vault = () => {
             </header>
 
             {/* Spark Posts */}
-            <NeonCard className="mb-8 border-accent-neon/20">
+            <NeonCard className="mb-8 border-white/15">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-accent-neon font-bold flex items-center gap-2">
+                    <h3 className="text-white font-bold flex items-center gap-2">
                         <Zap size={18} /> {t.IDEA_SPARK}
                     </h3>
                     <p className="text-[10px] text-gray-500">
@@ -252,7 +252,7 @@ export const Vault = () => {
                     onChange={(e) => setIdeaText(e.target.value)}
                     maxLength={400}
                     placeholder="Escribe una chispa valiosa para ti o para tus aliados..."
-                    className="w-full min-h-[130px] bg-black/50 border border-white/10 rounded-md px-4 py-3 text-sm focus:border-accent-neon outline-none transition-all placeholder:text-gray-600 resize-y"
+                    className="w-full min-h-[130px] bg-black/50 border border-white/10 rounded-md px-4 py-3 text-sm focus:border-white/40 outline-none transition-all placeholder:text-gray-600 resize-y"
                 />
                 <div className="mt-3 flex items-center justify-between">
                     <label className="flex items-center gap-2 text-[11px] text-gray-400">
@@ -270,7 +270,7 @@ export const Vault = () => {
                     <button
                         onClick={handleSaveIdea}
                         disabled={isSavingIdea}
-                        className="flex-1 p-2 bg-accent-neon text-black rounded-md hover:opacity-80 transition-opacity text-xs font-bold uppercase"
+                        className="flex-1 p-2 bg-white text-black rounded-md hover:bg-gray-200 transition-colors text-xs font-bold uppercase"
                     >
                         {shareWithAllies ? 'Publicar chispa' : 'Guardar en Vault'}
                     </button>
@@ -295,7 +295,7 @@ export const Vault = () => {
             {/* Book Protocols */}
             <section className="mb-8">
                 <h3 className="text-white font-bold mb-4 flex items-center gap-2 tracking-[0.2em] text-sm">
-                    <BookOpen size={16} className="text-accent-neon" /> {t.BOOK_PROTOCOLS}
+                    <BookOpen size={16} className="text-white" /> {t.BOOK_PROTOCOLS}
                 </h3>
 
 
@@ -322,7 +322,7 @@ export const Vault = () => {
                                                 <div className="flex justify-between items-start">
                                                     <h4 className="font-bold text-sm leading-tight mb-1 pr-6">{book.title}</h4>
                                                     <div className="flex gap-2">
-                                                        <button onClick={() => openEditModal(book)} className="text-gray-600 hover:text-accent-neon transition-colors">
+                                                        <button onClick={() => openEditModal(book)} className="text-gray-600 hover:text-white transition-colors">
                                                             <Edit2 size={14} />
                                                         </button>
                                                         <button onClick={() => removeBook(book.id)} className="text-gray-600 hover:text-red-500 transition-colors">
@@ -337,7 +337,7 @@ export const Vault = () => {
                                                     <motion.div
                                                         initial={{ width: 0 }}
                                                         animate={{ width: `${(book.pagesRead / book.pageCount) * 100}%` }}
-                                                        className="h-full bg-accent-neon"
+                                                        className="h-full bg-white/75"
                                                     />
                                                 </div>
                                             </div>
@@ -394,7 +394,7 @@ export const Vault = () => {
                                 <div className="flex justify-center gap-4 mb-4">
                                     <button
                                         onClick={() => resetPomo('FOCUS')}
-                                        className={`text-[10px] font-bold uppercase tracking-widest ${pomoMode === 'FOCUS' ? 'text-accent-neon' : 'text-gray-600'}`}
+                                        className={`text-[10px] font-bold uppercase tracking-widest ${pomoMode === 'FOCUS' ? 'text-white' : 'text-gray-600'}`}
                                     >
                                         {t.FOCUS_BTN}
                                     </button>
@@ -410,9 +410,9 @@ export const Vault = () => {
                                 </div>
                                 <button
                                     onClick={togglePomo}
-                                    className={`w-16 h-16 rounded-full border-2 flex items-center justify-center mx-auto transition-all hover:scale-105 ${isPomoActive ? 'border-accent-alert text-accent-alert' : 'border-white text-white'}`}
+                                    className={`w-16 h-16 rounded-full border-2 flex items-center justify-center mx-auto transition-all hover:scale-105 ${isPomoActive ? 'border-red-400 text-red-400' : 'border-white text-white'}`}
                                 >
-                                    {isPomoActive ? <span className="block w-4 h-4 bg-accent-alert rounded-sm" /> : <span className="block w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-white border-b-[8px] border-b-transparent ml-1" />}
+                                    {isPomoActive ? <span className="block w-4 h-4 bg-red-400 rounded-sm" /> : <span className="block w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-white border-b-[8px] border-b-transparent ml-1" />}
                                 </button>
                             </div>
                         </motion.div>
@@ -424,9 +424,9 @@ export const Vault = () => {
             <AnimatePresence>
                 {isBookModalOpen && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 z-50 p-6 flex items-center justify-center backdrop-blur-sm">
-                        <NeonCard className="w-full max-w-sm border-accent-neon/30">
+                        <NeonCard className="w-full max-w-sm border-white/15">
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-accent-neon font-bold uppercase">{editingBookId ? 'EDIT PROTOCOL' : 'NEW PROTOCOL'}</h3>
+                                <h3 className="text-white font-bold uppercase">{editingBookId ? 'EDIT PROTOCOL' : 'NEW PROTOCOL'}</h3>
                                 <button onClick={() => setIsBookModalOpen(false)}><X className="text-gray-500 hover:text-white" /></button>
                             </div>
 
@@ -435,7 +435,7 @@ export const Vault = () => {
                                     <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Title</label>
                                     <input
                                         required
-                                        className="w-full bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-accent-neon rounded"
+                                        className="w-full bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-white/40 rounded"
                                         placeholder="Book Title"
                                         value={bookForm.title} onChange={e => setBookForm({ ...bookForm, title: e.target.value })}
                                     />
@@ -443,7 +443,7 @@ export const Vault = () => {
                                 <div>
                                     <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Author</label>
                                     <input
-                                        className="w-full bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-accent-neon rounded"
+                                        className="w-full bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-white/40 rounded"
                                         placeholder="Author Name"
                                         value={bookForm.author} onChange={e => setBookForm({ ...bookForm, author: e.target.value })}
                                     />
@@ -454,7 +454,7 @@ export const Vault = () => {
                                         <input
                                             required
                                             type="number"
-                                            className="w-full bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-accent-neon rounded"
+                                            className="w-full bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-white/40 rounded"
                                             placeholder="Total Pages"
                                             value={bookForm.pages} onChange={e => setBookForm({ ...bookForm, pages: e.target.value })}
                                         />
@@ -462,7 +462,7 @@ export const Vault = () => {
                                     <div>
                                         <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Cover Image</label>
                                         <input
-                                            className="w-full bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-accent-neon rounded mb-2"
+                                            className="w-full bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-white/40 rounded mb-2"
                                             placeholder="https://..."
                                             value={bookForm.coverUrl.startsWith('data:') ? '' : bookForm.coverUrl}
                                             onChange={e => setBookForm({ ...bookForm, coverUrl: e.target.value })}
@@ -476,7 +476,7 @@ export const Vault = () => {
                                     </div>
                                 </div>
 
-                                <button type="submit" className="w-full bg-accent-neon text-black font-bold py-3 uppercase text-xs hover:bg-white transition-colors mt-2 rounded">
+                                <button type="submit" className="w-full bg-white text-black font-bold py-3 uppercase text-xs hover:bg-gray-200 transition-colors mt-2 rounded">
                                     {editingBookId ? 'UPDATE PROTOCOL' : 'INITIATE PROTOCOL'}
                                 </button>
                             </form>
@@ -489,18 +489,18 @@ export const Vault = () => {
             <AnimatePresence>
                 {isInsightModalOpen && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-                        <motion.div className="bg-carbonblack border border-accent-neon/30 p-6 rounded w-full max-w-sm">
-                            <h3 className="text-accent-neon font-bold uppercase mb-4">{t.EXTRACT_INTEL}</h3>
+                        <motion.div className="bg-carbonblack border border-white/15 p-6 rounded-xl w-full max-w-sm">
+                            <h3 className="text-white font-bold uppercase mb-4">{t.EXTRACT_INTEL}</h3>
                             <form onSubmit={handleAddInsight}>
                                 <textarea
                                     autoFocus
-                                    className="w-full h-32 bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-accent-neon mb-4"
+                                    className="w-full h-32 bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-white/40 mb-4"
                                     placeholder={t.INSIGHT_PLACEHOLDER}
                                     value={newInsightText} onChange={e => setNewInsightText(e.target.value)}
                                 />
                                 <div className="flex justify-end gap-2">
                                     <button type="button" onClick={() => setIsInsightModalOpen(false)} className="text-xs text-gray-500 uppercase px-4 py-2 hover:text-white">{t.CANCEL}</button>
-                                    <button type="submit" className="bg-accent-neon text-black font-bold px-4 py-2 uppercase text-xs tracking-wider rounded">{t.SAVE_DATA}</button>
+                                    <button type="submit" className="bg-white text-black font-bold px-4 py-2 uppercase text-xs tracking-wider rounded hover:bg-gray-200 transition-colors">{t.SAVE_DATA}</button>
                                 </div>
                             </form>
                         </motion.div>

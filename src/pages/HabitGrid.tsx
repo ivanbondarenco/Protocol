@@ -29,7 +29,7 @@ export const HabitGrid = () => {
                                     const active = (hIdx + dIdx) % 3 !== 0;
                                     return (
                                         <td key={day} className="p-1 text-center">
-                                            <div className={`w-6 h-6 mx-auto rounded-sm ${active ? 'bg-accent-neon shadow-[0_0_8px_rgba(0,242,255,0.4)]' : 'bg-white/5'}`}></div>
+                                            <div className={`w-6 h-6 mx-auto rounded-sm ${active ? 'bg-white/80' : 'bg-white/5'}`}></div>
                                         </td>
                                     );
                                 })}

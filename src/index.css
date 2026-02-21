@@ -1,60 +1,237 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
 
   /* MINIMAL DARK (Default) */
-  --bg-void: #0A0A0A;
-  --bg-carbon: #171717;
-  --accent-neon: #FFFFFF;
-  --accent-alert: #A1A1AA;
+  --bg-void: #0c0c0d;
+  --bg-carbon: #151516;
+  --surface-1: #171719;
+  --surface-2: #1d1d20;
+  --surface-3: #232327;
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --accent-neon: #f5f5f5;
+  --accent-alert: #b1b5bd;
 }
 
 body.minimal-dark {
-  /* MINIMAL DARK */
-  --bg-void: #0A0A0A;
-  --bg-carbon: #171717;
-  --accent-neon: #FFFFFF;
-  --accent-alert: #A1A1AA;
-  /* Using Silver for alert/secondary in this mode */
+  --bg-void: #0c0c0d;
+  --bg-carbon: #151516;
+  --surface-1: #171719;
+  --surface-2: #1d1d20;
+  --surface-3: #232327;
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --accent-neon: #f5f5f5;
+  --accent-alert: #b1b5bd;
+  background-image:
+    radial-gradient(120% 60% at 50% -20%, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015) 0%, rgba(255, 255, 255, 0) 35%);
 }
 
 body.minimal-holistic {
-  /* MINIMAL HOLISTIC */
-  --bg-void: #1C1917;
-  --bg-carbon: #292524;
-  --accent-neon: #86EFAC;
-  /* Sage Green */
-  --accent-alert: #FDE047;
-  /* Gold/Yellow */
+  --bg-void: #11180f;
+  --bg-carbon: #182116;
+  --surface-1: #1d291b;
+  --surface-2: #223321;
+  --surface-3: #2a3f28;
+  --text-main: #edf5e7;
+  --text-muted: #a7b79c;
+  --accent-neon: #95c07f;
+  --accent-alert: #d1b26d;
+  background-image:
+    radial-gradient(120% 66% at 10% -22%, rgba(146, 184, 118, 0.22) 0%, rgba(146, 184, 118, 0) 72%),
+    radial-gradient(95% 62% at 92% 118%, rgba(92, 121, 76, 0.24) 0%, rgba(92, 121, 76, 0) 74%),
+    linear-gradient(180deg, rgba(214, 229, 193, 0.06) 0%, rgba(15, 18, 14, 0) 48%);
+}
+
+body.minimal-light {
+  --bg-void: #f5f5f7;
+  --bg-carbon: #eceef2;
+  --surface-1: #ffffff;
+  --surface-2: #f9fafb;
+  --surface-3: #eef1f5;
+  --text-main: #111827;
+  --text-muted: #64748b;
+  --accent-neon: #111827;
+  --accent-alert: #334155;
+  background-image:
+    radial-gradient(120% 55% at 50% -28%, rgba(17, 24, 39, 0.08) 0%, rgba(17, 24, 39, 0) 72%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.65) 0%, rgba(245, 246, 248, 0.4) 40%, rgba(245, 246, 248, 0.8) 100%);
 }
 
 body {
   background-color: var(--bg-void);
-  color: white;
+  color: var(--text-main);
   min-height: 100vh;
   overflow-x: hidden;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.24s ease, color 0.24s ease;
+  background-image:
+    radial-gradient(120% 60% at 50% -20%, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015) 0%, rgba(255, 255, 255, 0) 35%);
+}
+
+/* Holistic overrides for utility-heavy screens */
+body.minimal-holistic .bg-voidblack {
+  background-color: #11180f !important;
+}
+
+body.minimal-holistic .bg-carbonblack {
+  background-color: #182116 !important;
+}
+
+body.minimal-holistic .bg-\[\#131313\],
+body.minimal-holistic .bg-\[\#141416\],
+body.minimal-holistic .bg-\[\#151515\],
+body.minimal-holistic .bg-\[\#171719\] {
+  background-color: #1d291b !important;
+}
+
+body.minimal-holistic .bg-white\/5 {
+  background-color: rgba(149, 192, 127, 0.12) !important;
+}
+
+body.minimal-holistic .bg-white\/10 {
+  background-color: rgba(149, 192, 127, 0.2) !important;
+}
+
+body.minimal-holistic .border-white\/10 {
+  border-color: rgba(149, 192, 127, 0.3) !important;
+}
+
+body.minimal-holistic .border-white\/15 {
+  border-color: rgba(149, 192, 127, 0.35) !important;
+}
+
+body.minimal-holistic .border-white\/20 {
+  border-color: rgba(149, 192, 127, 0.42) !important;
+}
+
+body.minimal-holistic .text-gray-400 {
+  color: #bdcbb4 !important;
+}
+
+body.minimal-holistic .text-gray-500 {
+  color: #9daf93 !important;
+}
+
+body.minimal-holistic .text-white {
+  color: #edf5e7 !important;
+}
+
+body.minimal-holistic .bg-white {
+  background-color: #95c07f !important;
+}
+
+body.minimal-holistic .text-black {
+  color: #10180e !important;
+}
+
+/* Light Apple-like overrides */
+body.minimal-light .bg-voidblack {
+  background-color: #f5f5f7 !important;
+}
+
+body.minimal-light .bg-carbonblack {
+  background-color: #eceef2 !important;
+}
+
+body.minimal-light .bg-\[\#131313\],
+body.minimal-light .bg-\[\#141416\],
+body.minimal-light .bg-\[\#151515\],
+body.minimal-light .bg-\[\#171719\] {
+  background-color: #ffffff !important;
+}
+
+body.minimal-light .bg-black\/20 {
+  background-color: rgba(15, 23, 42, 0.06) !important;
+}
+
+body.minimal-light .bg-black\/30,
+body.minimal-light .bg-black\/40,
+body.minimal-light .bg-black\/50,
+body.minimal-light .bg-black\/80,
+body.minimal-light .bg-black\/90 {
+  background-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+body.minimal-light .bg-white\/5 {
+  background-color: rgba(15, 23, 42, 0.04) !important;
+}
+
+body.minimal-light .bg-white\/10 {
+  background-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+body.minimal-light .border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+body.minimal-light .border-white\/15 {
+  border-color: rgba(15, 23, 42, 0.16) !important;
+}
+
+body.minimal-light .border-white\/20 {
+  border-color: rgba(15, 23, 42, 0.2) !important;
+}
+
+body.minimal-light .border-white\/30 {
+  border-color: rgba(15, 23, 42, 0.3) !important;
+}
+
+body.minimal-light .text-white {
+  color: #111827 !important;
+}
+
+body.minimal-light .text-gray-400 {
+  color: #475569 !important;
+}
+
+body.minimal-light .text-gray-500 {
+  color: #64748b !important;
+}
+
+body.minimal-light .bg-white {
+  background-color: #111827 !important;
+}
+
+body.minimal-light .text-black {
+  color: #f8fafc !important;
+}
+
+body.minimal-light .hover\:text-white:hover {
+  color: #111827 !important;
+}
+
+body.minimal-light .hover\:bg-white:hover {
+  background-color: #1f2937 !important;
+  color: #f8fafc !important;
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #111;
+  background: #121215;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 4px;
+  background: #2e3036;
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: #41444d;
+}
+
+::selection {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
 }
