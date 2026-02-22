@@ -1,6 +1,6 @@
 import { useAuthStore } from '../store/useAuthStore';
 
-const BASE_URL = 'http://localhost:4000/api';
+const BASE_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'http://localhost:4000/api';
 
 const forceLogoutOnAuthFailure = (status: number, rawText: string) => {
     if (status !== 401 && status !== 403) return;
