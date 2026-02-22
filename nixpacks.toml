@@ -2,7 +2,7 @@
 nixPkgs = ["nodejs_20", "npm-9_x"]
 
 [phases.install]
-cmds = ["npm install --legacy-peer-deps --no-fund --no-audit --ignore-engines"]
+cmds = ["npm install --legacy-peer-deps --no-fund --no-audit --ignore-engines --ignore-scripts"]
 
 [phases.build]
 cmds = ["npm run build"]
