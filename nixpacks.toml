@@ -1,5 +1,11 @@
+[phases.setup]
+nixPkgs = ["caddy", "nodejs_20", "npm-9_x"]
+
+[phases.install]
+cmds = ["npm install --legacy-peer-deps --no-fund --no-audit --ignore-engines"]
+
 [phases.build]
 cmds = ["npm run build"]
 
 [start]
-cmd = "npx serve dist -s -l $PORT"
+cmd = "caddy file-server --root dist --listen :$PORT --access-log"
