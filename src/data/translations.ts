@@ -40,6 +40,18 @@ export const APP_TRANSLATIONS = {
         REGISTER: "REGISTER",
         LOGIN: "LOGIN",
         SECURE_CONNECTION: "SECURE CONNECTION :: V3.0",
+        CREATE_ACCOUNT_TITLE: "Create your account",
+        WELCOME_BACK_TITLE: "Welcome back",
+        PASSWORD_PLACEHOLDER: "Password",
+        CREATE_ACCOUNT_BTN: "Create Account",
+        SIGN_IN_BTN: "Sign In",
+        ALREADY_HAVE_ACCOUNT: "Already have an account? Sign in",
+        NEW_HERE: "New here? Create account",
+        REGISTER_NAME_PH: "Name",
+        REGISTER_AGE_PH: "Age",
+        REGISTER_WEIGHT_PH: "Weight (kg)",
+        REGISTER_HEIGHT_PH: "Height (cm)",
+        PLEASE_FILL_FIELDS: "Please fill all fields.",
 
         // Fuel
         FUEL_TITLE: "FUEL STATION",
@@ -111,6 +123,10 @@ export const APP_TRANSLATIONS = {
         SESSION_COMPLETE: "SESSION COMPLETE",
         RATE_INTENSITY: "Rate Intensity",
         CANCEL: "Cancel",
+        SAVE: "Save",
+        EXERCISE_NAME_PH: "EXERCISE NAME",
+        MUSCLE_GROUP_PH: "SELECT MUSCLE GROUP",
+        ADD_NEW_EXERCISE: "ADD NEW EXERCISE",
 
         // Vault
         VAULT_TITLE: "THE VAULT",
@@ -189,6 +205,18 @@ export const APP_TRANSLATIONS = {
         REGISTER: "REGISTRARSE",
         LOGIN: "ENTRAR",
         SECURE_CONNECTION: "CONEXIÓN SEGURA :: V3.0",
+        CREATE_ACCOUNT_TITLE: "Crea tu cuenta",
+        WELCOME_BACK_TITLE: "Bienvenido de nuevo",
+        PASSWORD_PLACEHOLDER: "Contraseña",
+        CREATE_ACCOUNT_BTN: "Crear Cuenta",
+        SIGN_IN_BTN: "Iniciar Sesión",
+        ALREADY_HAVE_ACCOUNT: "¿Ya tienes cuenta? Inicia sesión",
+        NEW_HERE: "¿Eres nuevo? Crea tu cuenta",
+        REGISTER_NAME_PH: "Nombre",
+        REGISTER_AGE_PH: "Edad",
+        REGISTER_WEIGHT_PH: "Peso (kg)",
+        REGISTER_HEIGHT_PH: "Altura (cm)",
+        PLEASE_FILL_FIELDS: "Completa todos los campos.",
 
         // Fuel
         FUEL_TITLE: "FUEL STATION",
@@ -265,6 +293,10 @@ export const APP_TRANSLATIONS = {
         RATING_MAINTENANCE: "MANTENIMIENTO (MEH)",
         RATING_INTENSE: "INTENSO",
         RATING_DOMINATED: "TOTAL FOCUS",
+        SAVE: "Guardar",
+        EXERCISE_NAME_PH: "NOMBRE EJERCICIO",
+        MUSCLE_GROUP_PH: "SELECCIONAR GRUPO MUSCULAR",
+        ADD_NEW_EXERCISE: "NUEVO EJERCICIO",
 
         // Vault
         VAULT_TITLE: "THE VAULT",

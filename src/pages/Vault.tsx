@@ -1,6 +1,6 @@
 import { GlitchText } from '../components/GlitchText';
 import { NeonCard } from '../components/NeonCard';
-import { Plus, X, BookOpen, Zap, Minus, BookPlus, Edit2, Clock3, Bold, Italic, Link2 } from 'lucide-react';
+import { Plus, X, BookOpen, Zap, Minus, BookPlus, Edit2, Clock3, Bold, Italic, Link2, Trash2 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useProtocolStore } from '../store/useProtocolStore';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -9,8 +9,12 @@ import { api } from '../lib/api';
 
 
 export const Vault = () => {
-    const { books, addBook, updateBookProgress, addInsight, removeBook, updateBook, language, addIdea } = useProtocolStore();
+    const { books, addBook, updateBookProgress, addInsight, removeBook, updateBook, language, addIdea, history, removeIdea } = useProtocolStore();
     const t = APP_TRANSLATIONS[language];
+
+    const allIdeas = Object.entries(history).flatMap(([date, log]) =>
+        (log.ideas || []).map((text, index) => ({ date, text, index }))
+    ).reverse();
 
     // Book Management State
     const [isBookModalOpen, setIsBookModalOpen] = useState(false);
@@ -86,6 +90,7 @@ export const Vault = () => {
     const [ideaError, setIdeaError] = useState<string | null>(null);
     const [isSavingIdea, setIsSavingIdea] = useState(false);
     const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
+    const [isIdeasModalOpen, setIsIdeasModalOpen] = useState(false);
     const ideaInputRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
@@ -292,14 +297,30 @@ export const Vault = () => {
                 )}
             </NeonCard>
 
+            {/* Saved Ideas Button */}
+            <section className="mb-8">
+                <NeonCard className="p-4 border-white/5 bg-white/[0.02] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Zap size={20} className="text-white" />
+                        <div>
+                            <h3 className="text-white font-bold text-sm tracking-[0.2em] uppercase">IDEAS (VAULT)</h3>
+                            <p className="text-[10px] text-gray-500">{allIdeas.length} chispas guardadas</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setIsIdeasModalOpen(true)}
+                        className="bg-white text-black font-bold px-4 py-2 rounded-lg text-xs tracking-wider uppercase hover:bg-gray-200 transition-colors"
+                    >
+                        Ver Vault
+                    </button>
+                </NeonCard>
+            </section>
+
             {/* Book Protocols */}
             <section className="mb-8">
                 <h3 className="text-white font-bold mb-4 flex items-center gap-2 tracking-[0.2em] text-sm">
                     <BookOpen size={16} className="text-white" /> {t.BOOK_PROTOCOLS}
                 </h3>
-
-
-
 
                 <div className="grid gap-4">
                     <AnimatePresence>
@@ -410,9 +431,9 @@ export const Vault = () => {
                                 </div>
                                 <button
                                     onClick={togglePomo}
-                                    className={`w-16 h-16 rounded-full border-2 flex items-center justify-center mx-auto transition-all hover:scale-105 ${isPomoActive ? 'border-red-400 text-red-400' : 'border-white text-white'}`}
+                                    className={`w-16 h-16 rounded-full border-2 flex items-center justify-center mx-auto transition-all hover:scale-105 ${isPomoActive ? 'border-red-400 text-red-400' : 'border-current text-white'}`}
                                 >
-                                    {isPomoActive ? <span className="block w-4 h-4 bg-red-400 rounded-sm" /> : <span className="block w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-white border-b-[8px] border-b-transparent ml-1" />}
+                                    {isPomoActive ? <span className="block w-4 h-4 bg-red-400 rounded-sm" /> : <span className="block w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-current border-b-[8px] border-b-transparent ml-1" />}
                                 </button>
                             </div>
                         </motion.div>
@@ -503,6 +524,55 @@ export const Vault = () => {
                                     <button type="submit" className="bg-white text-black font-bold px-4 py-2 uppercase text-xs tracking-wider rounded hover:bg-gray-200 transition-colors">{t.SAVE_DATA}</button>
                                 </div>
                             </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Ideas Vault Modal */}
+            <AnimatePresence>
+                {isIdeasModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/95 z-50 p-4 flex justify-center backdrop-blur-sm pt-20 pb-10 overflow-y-auto"
+                        onClick={() => setIsIdeasModalOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }}
+                            className="bg-[#121212] border border-white/15 p-6 rounded-2xl w-full max-w-md my-auto flex flex-col max-h-full"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="flex justify-between items-center mb-6 shrink-0">
+                                <h3 className="text-white font-bold uppercase tracking-widest flex items-center gap-2">
+                                    <Zap size={18} /> HISTORIAL VAULT
+                                </h3>
+                                <button onClick={() => setIsIdeasModalOpen(false)}><X className="text-gray-500 hover:text-white" /></button>
+                            </div>
+
+                            <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1 pb-4">
+                                {allIdeas.length === 0 ? (
+                                    <div className="text-center py-10 text-gray-500 italic">
+                                        <p className="text-sm">No hay ideas guardadas aún.</p>
+                                    </div>
+                                ) : (
+                                    allIdeas.map((idea, i) => (
+                                        <NeonCard key={`${idea.date}-${idea.index}-${i}`} className="p-4 border-l-2 border-white/50 bg-[#1a1a1c]">
+                                            <div className="flex justify-between items-start gap-4">
+                                                <p className="text-sm text-gray-200 whitespace-pre-wrap flex-1 leading-relaxed">{idea.text}</p>
+                                                <button
+                                                    onClick={() => removeIdea(idea.date, idea.index)}
+                                                    className="text-gray-500 hover:text-red-500 transition-colors p-1"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                            <div className="mt-3 text-[10px] text-gray-500 font-mono tracking-wider">
+                                                {idea.date}
+                                            </div>
+                                        </NeonCard>
+                                    ))
+                                )}
+                            </div>
                         </motion.div>
                     </motion.div>
                 )}

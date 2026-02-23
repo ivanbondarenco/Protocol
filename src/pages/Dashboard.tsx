@@ -7,12 +7,12 @@ import { NeonCard } from '../components/NeonCard';
 import { getProtocolDate, getDisplayDate } from '../lib/dateUtils';
 import { addDays, format } from 'date-fns';
 import { useMemo, useState } from 'react';
-import { useEffect } from 'react';
-import { Settings, Plus, X, Globe, User, Activity, ArrowRight, Flame } from 'lucide-react';
+
+import { Settings, Plus, X, Globe, User, Activity, Flame } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { APP_TRANSLATIONS } from '../data/translations';
 import { ProfileModal } from '../components/profile/ProfileModal';
-import { api } from '../lib/api';
+
 
 // Matrix Component
 const MatrixGrid = () => {
@@ -127,25 +127,8 @@ export const Dashboard = () => {
     // Settings / Theme Logic
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const [weeklyInsights, setWeeklyInsights] = useState<{ score: number; completeDays: number; recommendations: string[] } | null>(null);
-    const [isInsightsOpen, setIsInsightsOpen] = useState(false);
     const currentStreak = getCurrentStreak();
 
-    useEffect(() => {
-        const load = async () => {
-            try {
-                const insights = await api.get('/insights/weekly');
-                setWeeklyInsights({
-                    score: insights.score,
-                    completeDays: insights.completeDays,
-                    recommendations: insights.recommendations || []
-                });
-            } catch (e) {
-                console.error('Could not load dashboard intelligence', e);
-            }
-        };
-        load();
-    }, [history]);
 
     const handleDelete = (id: string) => {
         if (window.confirm(t.DELETE_CONFIRM)) {
@@ -193,21 +176,7 @@ export const Dashboard = () => {
         toggleHabit(id);
     };
 
-    const openInsights = async () => {
-        if (!weeklyInsights) {
-            try {
-                const insights = await api.get('/insights/weekly');
-                setWeeklyInsights({
-                    score: insights.score,
-                    completeDays: insights.completeDays,
-                    recommendations: insights.recommendations || []
-                });
-            } catch (e) {
-                console.error('Could not load weekly insights for modal', e);
-            }
-        }
-        setIsInsightsOpen(true);
-    };
+
 
     return (
         <div className="min-h-screen bg-voidblack pb-32 px-5 pt-8 max-w-md mx-auto relative transition-colors duration-300">
@@ -264,12 +233,6 @@ export const Dashboard = () => {
             <section className="mb-8">
                 <NeonCard className="border-white/5 bg-white/[0.02] p-5 rounded-[24px]">
                     <MatrixGrid />
-                    <button
-                        onClick={openInsights}
-                        className="w-full mt-4 py-2 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 hover:text-white transition-colors border-t border-white/5 pt-4"
-                    >
-                        Ver Insights <ArrowRight size={12} />
-                    </button>
                 </NeonCard>
             </section>
 
@@ -489,46 +452,7 @@ export const Dashboard = () => {
                 )}
             </AnimatePresence>
 
-            <AnimatePresence>
-                {isInsightsOpen && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/85 z-50 p-4 flex items-center justify-center"
-                        onClick={() => setIsInsightsOpen(false)}
-                    >
-                        <motion.div
-                            initial={{ y: 16, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: 16, opacity: 0 }}
-                            className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#131313] p-5"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-sm font-bold uppercase text-white">Insights Semanales</h3>
-                                <button onClick={() => setIsInsightsOpen(false)} className="text-gray-500 hover:text-white">
-                                    <X size={16} />
-                                </button>
-                            </div>
-                            {!weeklyInsights && <p className="text-xs text-gray-500">Cargando...</p>}
-                            {weeklyInsights && (
-                                <div className="space-y-3">
-                                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-                                        <p className="text-[10px] uppercase text-gray-500 mb-1">Score</p>
-                                        <p className="text-2xl font-bold text-white">{weeklyInsights.score}</p>
-                                        <p className="text-[11px] text-gray-400">Dias completos: {weeklyInsights.completeDays}/7</p>
-                                    </div>
-                                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-                                        <p className="text-[10px] uppercase text-gray-500 mb-2">Recomendacion principal</p>
-                                        <p className="text-xs text-gray-300">{weeklyInsights.recommendations[0] || 'Sin recomendaciones por ahora.'}</p>
-                                    </div>
-                                </div>
-                            )}
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+
 
             {progress === 100 && (
                 <NeonCard className="mt-8 border-white/20 bg-white/5">

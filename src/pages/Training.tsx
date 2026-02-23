@@ -342,7 +342,7 @@ export const Training = () => {
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
                                         <input
-                                            placeholder="SELECT OR SEARCH EXERCISE"
+                                            placeholder={t.EXERCISE_PLACEHOLDER}
                                             className="w-full bg-black/30 border border-white/10 p-2 text-white uppercase text-sm"
                                             value={exercise}
                                             onChange={e => {
@@ -581,15 +581,15 @@ export const Training = () => {
                 {isAddModalOpen && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-6 text-center">
                         <div className="w-full max-w-sm bg-[#171719] border border-white/15 rounded-2xl p-6 relative">
-                            <h3 className="text-white font-bold uppercase mb-4">ADD NEW EXERCISE</h3>
-                            <input placeholder="EXERCISE NAME" className="w-full bg-black/50 border border-white/10 p-2 text-white mb-2 text-xs uppercase" value={newExName} onChange={e => setNewExName(e.target.value)} />
+                            <h3 className="text-white font-bold uppercase mb-4">{t.ADD_NEW_EXERCISE}</h3>
+                            <input placeholder={t.EXERCISE_NAME_PH} className="w-full bg-black/50 border border-white/10 p-2 text-white mb-2 text-xs uppercase" value={newExName} onChange={e => setNewExName(e.target.value)} />
                             <select className="w-full bg-black/50 border border-white/10 p-2 text-white mb-4 text-xs uppercase" value={newExMuscle} onChange={e => setNewExMuscle(e.target.value)}>
-                                <option value="">SELECT MUSCLE GROUP</option>
+                                <option value="">{t.MUSCLE_GROUP_PH}</option>
                                 {['CHEST', 'BACK', 'LEGS', 'SHOULDERS', 'ARMS', 'ABS', 'CARDIO', 'OTHER'].map(m => <option key={m} value={m}>{m}</option>)}
                             </select>
                             <div className="flex gap-2">
-                                <button onClick={() => setIsAddModalOpen(false)} className="flex-1 bg-gray-800 text-white py-2 text-xs uppercase font-bold">CANCEL</button>
-                                <button onClick={handleCreateExercise} className="flex-1 bg-white text-black py-2 text-xs uppercase font-bold rounded-lg">SAVE</button>
+                                <button onClick={() => setIsAddModalOpen(false)} className="flex-1 bg-gray-800 text-white py-2 text-xs uppercase font-bold">{t.CANCEL}</button>
+                                <button onClick={handleCreateExercise} className="flex-1 bg-white text-black py-2 text-xs uppercase font-bold rounded-lg">{t.SAVE}</button>
                             </div>
                         </div>
                     </motion.div>
@@ -599,8 +599,8 @@ export const Training = () => {
             {/* Terminate Modal */}
             <AnimatePresence>
                 {isTerminateOpen && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-6">
-                        <div className="w-full max-w-sm text-center">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-6 backdrop-blur-sm">
+                        <div className="w-full max-w-sm text-center bg-carbonblack border border-white/15 rounded-2xl p-8 shadow-2xl">
                             <GlitchText text={t.SESSION_COMPLETE} size="md" className="mb-8" />
                             <p className="text-xs text-gray-400 mb-6 uppercase tracking-widest">{t.RATE_INTENSITY}</p>
                             <div className="grid gap-3">

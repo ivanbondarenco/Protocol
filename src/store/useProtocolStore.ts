@@ -44,6 +44,12 @@ export const useProtocolStore = create<ProtocolState>()(
             syncHabits: async () => {
                 try {
                     const { habits, history: serverHistory } = await api.get('/habits');
+                    let vaultData: { ideas: Record<string, string[]>, books: any[] } = { ideas: {}, books: [] };
+                    try {
+                        vaultData = await api.get('/vault');
+                    } catch (e) {
+                        console.error('Failed to fetch vault data', e);
+                    }
 
                     set((state) => {
                         // Merge server history with local history (preserving other fields like water, macros)
@@ -66,6 +72,18 @@ export const useProtocolStore = create<ProtocolState>()(
                             mergedHistory[date].completedHabits = serverHistory[date].completedHabits;
                         });
 
+                        // Merge Ideas
+                        Object.keys(vaultData.ideas).forEach(date => {
+                            if (!mergedHistory[date]) {
+                                mergedHistory[date] = {
+                                    date, completedHabits: [], screenTimeFailed: false,
+                                    noGoonFailed: false, waterIntake: 0, caloriesBurned: 0,
+                                    ideas: [], macros: { protein: 0, carbs: 0, fats: 0, calories: 0 }
+                                };
+                            }
+                            mergedHistory[date].ideas = vaultData.ideas[date];
+                        });
+
                         const localHabitMap = new Map(state.habits.map(h => [h.id, h]));
                         const mergedHabits = (habits || []).map((h: any) => {
                             const local = localHabitMap.get(h.id);
@@ -78,7 +96,8 @@ export const useProtocolStore = create<ProtocolState>()(
 
                         return {
                             habits: mergedHabits.length > 0 ? mergedHabits : state.habits,
-                            history: mergedHistory
+                            history: mergedHistory,
+                            books: vaultData.books && vaultData.books.length > 0 ? vaultData.books : state.books
                         };
                     });
                 } catch (e) {
@@ -302,11 +321,18 @@ export const useProtocolStore = create<ProtocolState>()(
                 set((state) => ({ gymStats: { ...state.gymStats, ...stats } }));
             },
 
-            addBook: (book) => set((state) => ({ books: [...state.books, book] })),
-            removeBook: (id) => set((state) => ({ books: state.books.filter(b => b.id !== id) })),
-            updateBookProgress: (id, pages) => set((state) => ({
-                books: state.books.map(b => b.id === id ? { ...b, pagesRead: pages } : b)
-            })),
+            addBook: (book) => {
+                set((state) => ({ books: [...state.books, book] }));
+                api.post('/vault/books/sync', { books: get().books }).catch(console.error);
+            },
+            removeBook: (id) => {
+                set((state) => ({ books: state.books.filter(b => b.id !== id) }));
+                api.post('/vault/books/sync', { books: get().books }).catch(console.error);
+            },
+            updateBookProgress: (id, pages) => {
+                set((state) => ({ books: state.books.map(b => b.id === id ? { ...b, pagesRead: pages } : b) }));
+                api.post('/vault/books/sync', { books: get().books }).catch(console.error);
+            },
 
             addInsight: (insight) => set((state) => ({ insights: [...state.insights, insight] })),
 
@@ -334,6 +360,8 @@ export const useProtocolStore = create<ProtocolState>()(
                         }
                     };
                 });
+                const updatedIdeas = get().history[today]?.ideas || [];
+                api.post('/vault/ideas/sync', { dateKey: today, ideas: updatedIdeas }).catch(console.error);
             },
 
             logNutrition: (macros) => {
@@ -384,6 +412,8 @@ export const useProtocolStore = create<ProtocolState>()(
                         }
                     };
                 });
+                const updatedIdeas = get().history[date]?.ideas || [];
+                api.post('/vault/ideas/sync', { dateKey: date, ideas: updatedIdeas }).catch(console.error);
             },
 
             editIdea: (date, index, newText) => {
@@ -401,11 +431,14 @@ export const useProtocolStore = create<ProtocolState>()(
                         }
                     };
                 });
+                const updatedIdeas = get().history[date]?.ideas || [];
+                api.post('/vault/ideas/sync', { dateKey: date, ideas: updatedIdeas }).catch(console.error);
             },
 
-            updateBook: (id, updates) => set((state) => ({
-                books: state.books.map(b => b.id === id ? { ...b, ...updates } : b)
-            })),
+            updateBook: (id, updates) => {
+                set((state) => ({ books: state.books.map(b => b.id === id ? { ...b, ...updates } : b) }));
+                api.post('/vault/books/sync', { books: get().books }).catch(console.error);
+            },
             // AI Nutritionist State
             bioData: {
                 age: 25,

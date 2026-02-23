@@ -85,10 +85,19 @@ body.minimal-holistic .bg-carbonblack {
   background-color: #182116 !important;
 }
 
+body.minimal-holistic .bg-\[\#111\],
+body.minimal-holistic .bg-\[\#121212\],
 body.minimal-holistic .bg-\[\#131313\],
 body.minimal-holistic .bg-\[\#141416\],
 body.minimal-holistic .bg-\[\#151515\],
-body.minimal-holistic .bg-\[\#171719\] {
+body.minimal-holistic .bg-\[\#161616\],
+body.minimal-holistic .bg-\[\#171719\],
+body.minimal-holistic .bg-\[\#171719\]\/95,
+body.minimal-holistic .bg-\[\#18181b\],
+body.minimal-holistic .bg-\[\#1a1a1c\],
+body.minimal-holistic .bg-neutral-800,
+body.minimal-holistic .bg-neutral-900,
+body.minimal-holistic .bg-\[\#0f1110\]\/95 {
   background-color: #1d291b !important;
 }
 
@@ -110,6 +119,14 @@ body.minimal-holistic .border-white\/15 {
 
 body.minimal-holistic .border-white\/20 {
   border-color: rgba(149, 192, 127, 0.42) !important;
+}
+
+body.minimal-holistic .text-gray-200 {
+  color: #d6e5c1 !important;
+}
+
+body.minimal-holistic .text-gray-300 {
+  color: #c8d8b0 !important;
 }
 
 body.minimal-holistic .text-gray-400 {
@@ -141,10 +158,19 @@ body.minimal-light .bg-carbonblack {
   background-color: #eceef2 !important;
 }
 
+body.minimal-light .bg-\[\#111\],
+body.minimal-light .bg-\[\#121212\],
 body.minimal-light .bg-\[\#131313\],
 body.minimal-light .bg-\[\#141416\],
 body.minimal-light .bg-\[\#151515\],
-body.minimal-light .bg-\[\#171719\] {
+body.minimal-light .bg-\[\#161616\],
+body.minimal-light .bg-\[\#171719\],
+body.minimal-light .bg-\[\#171719\]\/95,
+body.minimal-light .bg-\[\#18181b\],
+body.minimal-light .bg-\[\#1a1a1c\],
+body.minimal-light .bg-neutral-800,
+body.minimal-light .bg-neutral-900,
+body.minimal-light .bg-\[\#0f1110\]\/95 {
   background-color: #ffffff !important;
 }
 
@@ -156,7 +182,8 @@ body.minimal-light .bg-black\/30,
 body.minimal-light .bg-black\/40,
 body.minimal-light .bg-black\/50,
 body.minimal-light .bg-black\/80,
-body.minimal-light .bg-black\/90 {
+body.minimal-light .bg-black\/90,
+body.minimal-light .bg-black\/95 {
   background-color: rgba(15, 23, 42, 0.08) !important;
 }
 
@@ -186,6 +213,14 @@ body.minimal-light .border-white\/30 {
 
 body.minimal-light .text-white {
   color: #111827 !important;
+}
+
+body.minimal-light .text-gray-200 {
+  color: #1e293b !important;
+}
+
+body.minimal-light .text-gray-300 {
+  color: #334155 !important;
 }
 
 body.minimal-light .text-gray-400 {
