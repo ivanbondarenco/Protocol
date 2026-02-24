@@ -290,7 +290,7 @@ export const Dashboard = () => {
                     >
                         <motion.div
                             initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="bg-[#171719] border border-white/15 p-6 rounded-2xl w-full max-w-sm mt-auto mb-4"
+                            className="bg-[#171719] border border-white/15 p-6 rounded-2xl w-full max-w-sm"
                         >
                             <div className="flex justify-between mb-6">
                                 <h3 className="text-white font-bold uppercase">{t.NEW_PROTOCOL}</h3>
@@ -375,7 +375,7 @@ export const Dashboard = () => {
                     >
                         <motion.div
                             initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="bg-[#171719] border border-white/15 p-6 rounded-2xl w-full max-w-sm overflow-y-auto max-h-[80vh] mt-auto mb-4"
+                            className="bg-[#171719] border border-white/15 p-6 rounded-2xl w-full max-w-sm overflow-y-auto max-h-[80vh]"
                         >
                             <div className="flex justify-between mb-6">
                                 <h3 className="text-white font-bold uppercase flex items-center gap-2">
