@@ -28,26 +28,32 @@ export const BottomNav = () => {
                             "relative flex flex-col items-center justify-center gap-1 group rounded-xl px-3 py-2 min-w-[58px] transition-colors",
                             isActive ? "bg-white/[0.08]" : "hover:bg-white/[0.04]"
                         )}>
-                            {isActive && (
-                                <motion.div
-                                    layoutId="nav-glow"
-                                    className="absolute -top-[1px] w-6 h-[2px] rounded-full bg-white/75"
-                                />
-                            )}
-                            <item.icon
-                                size={22}
-                                className={cn(
-                                    "transition-colors duration-300",
-                                    isActive ? "text-white" : "text-gray-500 group-hover:text-gray-200"
+                            <motion.div
+                                whileTap={{ scale: 0.85 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                                className="flex flex-col items-center justify-center gap-1 w-full h-full"
+                            >
+                                {isActive && (
+                                    <motion.div
+                                        layoutId="nav-glow"
+                                        className="absolute -top-[1px] w-6 h-[2px] rounded-full bg-white/75"
+                                    />
                                 )}
-                            />
-                            <span className={cn(
-                                "text-[9px] uppercase font-semibold tracking-[0.08em] transition-colors",
-                                "text-center",
-                                isActive ? "text-white" : "text-gray-500 group-hover:text-gray-200"
-                            )}>
-                                {item.label}
-                            </span>
+                                <item.icon
+                                    size={22}
+                                    className={cn(
+                                        "transition-colors duration-300",
+                                        isActive ? "text-white" : "text-gray-500 group-hover:text-gray-200"
+                                    )}
+                                />
+                                <span className={cn(
+                                    "text-[9px] uppercase font-semibold tracking-[0.08em] transition-colors",
+                                    "text-center",
+                                    isActive ? "text-white" : "text-gray-500 group-hover:text-gray-200"
+                                )}>
+                                    {item.label}
+                                </span>
+                            </motion.div>
                         </Link>
                     );
                 })}

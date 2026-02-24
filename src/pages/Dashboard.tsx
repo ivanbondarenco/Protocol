@@ -249,15 +249,21 @@ export const Dashboard = () => {
                     <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Hábitos de hoy</h2>
                     <span className="text-[10px] font-mono text-gray-600">{completedCount}/{scheduledHabits.length}</span>
                 </div>
-                {scheduledHabits.map((habit) => (
-                    <ProtocolToggle
+                {scheduledHabits.map((habit, i) => (
+                    <motion.div
                         key={habit.id}
-                        id={habit.id}
-                        title={habit.title}
-                        completed={todayLog.completedHabits.includes(habit.id)}
-                        onToggle={handleToggle}
-                        onDelete={handleDelete}
-                    />
+                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ delay: i * 0.06, type: 'spring', stiffness: 300, damping: 25 }}
+                    >
+                        <ProtocolToggle
+                            id={habit.id}
+                            title={habit.title}
+                            completed={todayLog.completedHabits.includes(habit.id)}
+                            onToggle={handleToggle}
+                            onDelete={handleDelete}
+                        />
+                    </motion.div>
                 ))}
                 {scheduledHabits.length === 0 && (
                     <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-8 text-center">
@@ -283,8 +289,8 @@ export const Dashboard = () => {
                         className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
                     >
                         <motion.div
-                            initial={{ y: 20 }} animate={{ y: 0 }} exit={{ y: 20 }}
-                            className="bg-[#171719] border border-white/15 p-6 rounded-2xl w-full max-w-sm"
+                            initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="bg-[#171719] border border-white/15 p-6 rounded-2xl w-full max-w-sm mt-auto mb-4"
                         >
                             <div className="flex justify-between mb-6">
                                 <h3 className="text-white font-bold uppercase">{t.NEW_PROTOCOL}</h3>
@@ -368,8 +374,8 @@ export const Dashboard = () => {
                         className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
                     >
                         <motion.div
-                            initial={{ scale: 0.9 }} animate={{ scale: 1 }}
-                            className="bg-[#171719] border border-white/15 p-6 rounded-2xl w-full max-w-sm overflow-y-auto max-h-[80vh]"
+                            initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="bg-[#171719] border border-white/15 p-6 rounded-2xl w-full max-w-sm overflow-y-auto max-h-[80vh] mt-auto mb-4"
                         >
                             <div className="flex justify-between mb-6">
                                 <h3 className="text-white font-bold uppercase flex items-center gap-2">

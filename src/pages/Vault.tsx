@@ -400,10 +400,8 @@ export const Vault = () => {
                 {isPomodoroOpen && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
                         <motion.div
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: 20, opacity: 0 }}
-                            className="w-full max-w-sm rounded-xl border border-white/10 bg-[#121212] p-6"
+                            initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="w-full max-w-sm rounded-xl border border-white/10 bg-[#121212] p-6 mt-auto mb-4"
                         >
                             <div className="flex justify-between items-center mb-5">
                                 <h3 className="text-white font-bold uppercase tracking-wider flex items-center gap-2">
@@ -444,64 +442,66 @@ export const Vault = () => {
             {/* Book Form Modal (Add/Edit) */}
             <AnimatePresence>
                 {isBookModalOpen && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 z-50 p-6 flex items-center justify-center backdrop-blur-sm">
-                        <NeonCard className="w-full max-w-sm border-white/15">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-white font-bold uppercase">{editingBookId ? 'EDIT PROTOCOL' : 'NEW PROTOCOL'}</h3>
-                                <button onClick={() => setIsBookModalOpen(false)}><X className="text-gray-500 hover:text-white" /></button>
-                            </div>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 z-50 p-6 flex items-end justify-center pb-12 backdrop-blur-sm">
+                        <motion.div initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="w-full max-w-sm">
+                            <NeonCard className="w-full border-white/15">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-white font-bold uppercase">{editingBookId ? 'EDIT PROTOCOL' : 'NEW PROTOCOL'}</h3>
+                                    <button onClick={() => setIsBookModalOpen(false)}><X className="text-gray-500 hover:text-white" /></button>
+                                </div>
 
-                            <form onSubmit={handleSaveBook} className="space-y-4">
-                                <div>
-                                    <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Title</label>
-                                    <input
-                                        required
-                                        className="w-full bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-white/40 rounded"
-                                        placeholder="Book Title"
-                                        value={bookForm.title} onChange={e => setBookForm({ ...bookForm, title: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Author</label>
-                                    <input
-                                        className="w-full bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-white/40 rounded"
-                                        placeholder="Author Name"
-                                        value={bookForm.author} onChange={e => setBookForm({ ...bookForm, author: e.target.value })}
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <form onSubmit={handleSaveBook} className="space-y-4">
                                     <div>
-                                        <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Pages</label>
+                                        <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Title</label>
                                         <input
                                             required
-                                            type="number"
                                             className="w-full bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-white/40 rounded"
-                                            placeholder="Total Pages"
-                                            value={bookForm.pages} onChange={e => setBookForm({ ...bookForm, pages: e.target.value })}
+                                            placeholder="Book Title"
+                                            value={bookForm.title} onChange={e => setBookForm({ ...bookForm, title: e.target.value })}
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Cover Image</label>
+                                        <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Author</label>
                                         <input
-                                            className="w-full bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-white/40 rounded mb-2"
-                                            placeholder="https://..."
-                                            value={bookForm.coverUrl.startsWith('data:') ? '' : bookForm.coverUrl}
-                                            onChange={e => setBookForm({ ...bookForm, coverUrl: e.target.value })}
-                                        />
-                                        <input
-                                            type="file"
-                                            accept="image/png, image/jpeg"
-                                            onChange={handleFileChange}
-                                            className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/20"
+                                            className="w-full bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-white/40 rounded"
+                                            placeholder="Author Name"
+                                            value={bookForm.author} onChange={e => setBookForm({ ...bookForm, author: e.target.value })}
                                         />
                                     </div>
-                                </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Pages</label>
+                                            <input
+                                                required
+                                                type="number"
+                                                className="w-full bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-white/40 rounded"
+                                                placeholder="Total Pages"
+                                                value={bookForm.pages} onChange={e => setBookForm({ ...bookForm, pages: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Cover Image</label>
+                                            <input
+                                                className="w-full bg-black/50 border border-white/10 p-3 text-white text-sm outline-none focus:border-white/40 rounded mb-2"
+                                                placeholder="https://..."
+                                                value={bookForm.coverUrl.startsWith('data:') ? '' : bookForm.coverUrl}
+                                                onChange={e => setBookForm({ ...bookForm, coverUrl: e.target.value })}
+                                            />
+                                            <input
+                                                type="file"
+                                                accept="image/png, image/jpeg"
+                                                onChange={handleFileChange}
+                                                className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/20"
+                                            />
+                                        </div>
+                                    </div>
 
-                                <button type="submit" className="w-full bg-white text-black font-bold py-3 uppercase text-xs hover:bg-gray-200 transition-colors mt-2 rounded">
-                                    {editingBookId ? 'UPDATE PROTOCOL' : 'INITIATE PROTOCOL'}
-                                </button>
-                            </form>
-                        </NeonCard>
+                                    <button type="submit" className="w-full bg-white text-black font-bold py-3 uppercase text-xs hover:bg-gray-200 transition-colors mt-2 rounded">
+                                        {editingBookId ? 'UPDATE PROTOCOL' : 'INITIATE PROTOCOL'}
+                                    </button>
+                                </form>
+                            </NeonCard>
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -510,7 +510,7 @@ export const Vault = () => {
             <AnimatePresence>
                 {isInsightModalOpen && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-                        <motion.div className="bg-carbonblack border border-white/15 p-6 rounded-xl w-full max-w-sm">
+                        <motion.div initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="bg-carbonblack border border-white/15 p-6 rounded-xl w-full max-w-sm mt-auto mb-4">
                             <h3 className="text-white font-bold uppercase mb-4">{t.EXTRACT_INTEL}</h3>
                             <form onSubmit={handleAddInsight}>
                                 <textarea
@@ -538,8 +538,8 @@ export const Vault = () => {
                         onClick={() => setIsIdeasModalOpen(false)}
                     >
                         <motion.div
-                            initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }}
-                            className="bg-[#121212] border border-white/15 p-6 rounded-2xl w-full max-w-md my-auto flex flex-col max-h-full"
+                            initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="bg-[#121212] border border-white/15 p-6 rounded-t-2xl rounded-b-none w-full max-w-md mt-auto flex flex-col max-h-[85vh]"
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="flex justify-between items-center mb-6 shrink-0">

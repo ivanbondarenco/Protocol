@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowBigDown, ArrowBigUp, MessageCircle, Send, Zap } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { api } from '../../lib/api';
 
 interface SparkComment {
@@ -99,8 +100,14 @@ export const SparkFeed = () => {
             {loading && <p className="text-[11px] text-gray-500">Cargando...</p>}
             {!loading && sorted.length === 0 && <p className="text-[11px] text-gray-500">Aun no hay chispas publicadas.</p>}
 
-            {!loading && sorted.slice(0, 8).map((spark) => (
-                <article key={spark.id} className="mb-3 last:mb-0 rounded-lg border border-white/10 bg-[#161616] p-3">
+            {!loading && sorted.slice(0, 8).map((spark, i) => (
+                <motion.article
+                    key={spark.id}
+                    initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ delay: i * 0.08, type: 'spring', stiffness: 300, damping: 25 }}
+                    className="mb-3 last:mb-0 rounded-lg border border-white/10 bg-[#161616] p-3"
+                >
                     <div className="flex items-start gap-3 mb-2">
                         {spark.user.avatarUrl ? (
                             <img src={spark.user.avatarUrl} alt={spark.user.username} className="w-8 h-8 rounded-full object-cover border border-white/20" />
@@ -151,7 +158,7 @@ export const SparkFeed = () => {
                             <Send size={13} />
                         </button>
                     </div>
-                </article>
+                </motion.article>
             ))}
         </div>
     );

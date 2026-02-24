@@ -1,4 +1,6 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+import { PageTransition } from './components/PageTransition';
 import { useEffect } from 'react';
 import { useProtocolStore } from './store/useProtocolStore';
 import { getProtocolDate } from './lib/dateUtils';
@@ -18,6 +20,7 @@ import { Login } from './pages/Login';
 import { useAuthStore } from './store/useAuthStore';
 
 function App() {
+  const location = useLocation();
   const { history, recoverMonkMode, theme, syncHabits, checkDailyReset, onboardingByUserId } = useProtocolStore();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated());
   const user = useAuthStore(state => state.user);
@@ -70,21 +73,21 @@ function App() {
   }
 
   return (
-    <Router>
-      <div className="min-h-screen bg-voidblack text-white font-sans antialiased">
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/training" element={<Training />} />
-          <Route path="/fuel" element={<Fuel />} />
-          <Route path="/vault" element={<Vault />} />
-          <Route path="/social" element={<Social />} />
-          <Route path="/pomodoro" element={<Pomodoro />} />
-          <Route path="/monk-mode" element={<MonkMode />} />
-          <Route path="/grid" element={<HabitGrid />} />
+    <div className="min-h-screen bg-voidblack text-white font-sans antialiased overflow-hidden">
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<PageTransition><Dashboard /></PageTransition>} />
+          <Route path="/training" element={<PageTransition><Training /></PageTransition>} />
+          <Route path="/fuel" element={<PageTransition><Fuel /></PageTransition>} />
+          <Route path="/vault" element={<PageTransition><Vault /></PageTransition>} />
+          <Route path="/social" element={<PageTransition><Social /></PageTransition>} />
+          <Route path="/pomodoro" element={<PageTransition><Pomodoro /></PageTransition>} />
+          <Route path="/monk-mode" element={<PageTransition><MonkMode /></PageTransition>} />
+          <Route path="/grid" element={<PageTransition><HabitGrid /></PageTransition>} />
         </Routes>
-        <BottomNav />
-      </div>
-    </Router>
+      </AnimatePresence>
+      <BottomNav />
+    </div>
   );
 }
 
