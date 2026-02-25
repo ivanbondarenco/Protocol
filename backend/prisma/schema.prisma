@@ -9,58 +9,61 @@ datasource db {
 
 // --- USERS & AUTH ---
 model User {
-  id           String    @id @default(uuid())
-  createdAt    DateTime  @default(now())
-  email        String    @unique
-  username     String    @unique
-  password     String
-  name         String?
-  avatarUrl    String?
-  level        Int       @default(1)
-  points       Int       @default(0)
-  onboardingCompleted Boolean @default(false)
+  id                    String                       @id @default(uuid())
+  createdAt             DateTime                     @default(now())
+  email                 String                       @unique
+  username              String                       @unique
+  password              String
+  name                  String?
+  avatarUrl             String?
+  level                 Int                          @default(1)
+  points                Int                          @default(0)
+  onboardingCompleted   Boolean                      @default(false)
   // Relations
-  habits       Habit[]
-  habitLogs    HabitLog[]
-  workouts     Workout[]
-  nutrition    NutritionLog[]
-  allyshipsInitiated Allyship[] @relation("AllyshipInitiator")
-  allyshipsReceived  Allyship[] @relation("AllyshipReceiver")
-  sentInvites  AllyInvitation[] @relation("InviteSender")
-  receivedInvites AllyInvitation[] @relation("InviteReceiver")
-  createdChallenges WeeklyChallenge[] @relation("ChallengeCreator")
+  habits                Habit[]
+  habitLogs             HabitLog[]
+  workouts              Workout[]
+  nutrition             NutritionLog[]
+  allyshipsInitiated    Allyship[]                   @relation("AllyshipInitiator")
+  allyshipsReceived     Allyship[]                   @relation("AllyshipReceiver")
+  sentInvites           AllyInvitation[]             @relation("InviteSender")
+  receivedInvites       AllyInvitation[]             @relation("InviteReceiver")
+  createdChallenges     WeeklyChallenge[]            @relation("ChallengeCreator")
   challengeParticipants WeeklyChallengeParticipant[]
-  sentPings SocialPing[] @relation("PingSender")
-  receivedPings SocialPing[] @relation("PingReceiver")
-  sparks SocialSpark[]
-  sparkVotes SocialSparkVote[]
-  sparkComments SocialSparkComment[]
+  sentPings             SocialPing[]                 @relation("PingSender")
+  receivedPings         SocialPing[]                 @relation("PingReceiver")
+  sparks                SocialSpark[]
+  sparkVotes            SocialSparkVote[]
+  sparkComments         SocialSparkComment[]
+  // Vault
+  privateIdeas          PrivateIdea[]
+  books                 Book[]
 }
 
 model Allyship {
-  id          String   @id @default(uuid())
-  userId      String
-  allyUserId  String
-  createdAt   DateTime @default(now())
-  user        User     @relation("AllyshipInitiator", fields: [userId], references: [id], onDelete: Cascade)
-  allyUser    User     @relation("AllyshipReceiver", fields: [allyUserId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  userId     String
+  allyUserId String
+  createdAt  DateTime @default(now())
+  user       User     @relation("AllyshipInitiator", fields: [userId], references: [id], onDelete: Cascade)
+  allyUser   User     @relation("AllyshipReceiver", fields: [allyUserId], references: [id], onDelete: Cascade)
 
   @@unique([userId, allyUserId])
 }
 
 // --- HABITS (Dashboard) ---
 model Habit {
-  id        String     @id @default(uuid())
-  title     String
-  category  String     // 'MINDSET', 'BODY', 'SPIRIT'
-  streak    Int        @default(0)
-  repeat    String     @default("DAILY")
+  id         String     @id @default(uuid())
+  title      String
+  category   String // 'MINDSET', 'BODY', 'SPIRIT'
+  streak     Int        @default(0)
+  repeat     String     @default("DAILY")
   repeatDays String?
-  difficulty Int       @default(1)
-  isActive  Boolean    @default(true)
-  userId    String
-  user      User       @relation(fields: [userId], references: [id])
-  logs      HabitLog[]
+  difficulty Int        @default(1)
+  isActive   Boolean    @default(true)
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs       HabitLog[]
 }
 
 model HabitLog {
@@ -68,44 +71,44 @@ model HabitLog {
   date      DateTime
   completed Boolean  @default(true)
   habitId   String
-  habit     Habit    @relation(fields: [habitId], references: [id])
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([habitId, date])
 }
 
 // --- TRAINING (Training Log) ---
 model Workout {
-  id        String      @id @default(uuid())
-  date      DateTime    @default(now())
-  name      String      // "Chest Day"
-  duration  Int?
-  sets      WorkoutSet[]
-  userId    String
-  user      User        @relation(fields: [userId], references: [id])
+  id       String       @id @default(uuid())
+  date     DateTime     @default(now())
+  name     String // "Chest Day"
+  duration Int?
+  sets     WorkoutSet[]
+  userId   String
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model WorkoutSet {
-  id        String   @id @default(uuid())
-  name      String   // Exercise Name
+  id        String  @id @default(uuid())
+  name      String // Exercise Name
   sets      Int
-  reps      String   // "12,10,8"
-  weight    String   // "60,65,70"
+  reps      String // "12,10,8"
+  weight    String // "60,65,70"
   workoutId String
-  workout   Workout  @relation(fields: [workoutId], references: [id])
+  workout   Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
 }
 
 // --- NUTRITION ---
 model NutritionLog {
-  id        String   @id @default(uuid())
-  date      DateTime @default(now())
-  calories  Int
-  protein   Int
-  carbs     Int
-  fats      Int
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  id       String   @id @default(uuid())
+  date     DateTime @default(now())
+  calories Int
+  protein  Int
+  carbs    Int
+  fats     Int
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // --- CATALOGS ---
@@ -116,56 +119,72 @@ model Exercise {
 }
 
 model Recipe {
-  id        String  @id @default(uuid())
-  name      String
-  calories  Int
-  protein   Int
+  id          String  @id @default(uuid())
+  name        String
+  calories    Int
+  protein     Int
   ingredients String?
 }
 
 model Book {
-  id     String @id @default(uuid())
-  title  String
-  author String
-  pages  Int
-  status String @default("READING")
+  id        String   @id @default(uuid())
+  title     String
+  author    String
+  pages     Int
+  status    String   @default("READING")
+  coverUrl  String?
+  createdAt DateTime @default(now())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// --- VAULT ---
+model PrivateIdea {
+  id        String   @id @default(uuid())
+  text      String
+  dateKey   String // The date string like "2023-10-27"
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, dateKey])
 }
 
 model AllyInvitation {
-  id         String   @id @default(uuid())
-  fromUserId String
-  toUserId   String
-  status     String   @default("PENDING") // PENDING | ACCEPTED | REJECTED
-  createdAt  DateTime @default(now())
+  id          String    @id @default(uuid())
+  fromUserId  String
+  toUserId    String
+  status      String    @default("PENDING") // PENDING | ACCEPTED | REJECTED
+  createdAt   DateTime  @default(now())
   respondedAt DateTime?
-  fromUser   User     @relation("InviteSender", fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUser     User     @relation("InviteReceiver", fields: [toUserId], references: [id], onDelete: Cascade)
+  fromUser    User      @relation("InviteSender", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser      User      @relation("InviteReceiver", fields: [toUserId], references: [id], onDelete: Cascade)
 
   @@unique([fromUserId, toUserId])
 }
 
 model WeeklyChallenge {
-  id         String   @id @default(uuid())
-  creatorId  String
-  title      String
-  targetDays Int      @default(5)
-  startDate  DateTime
-  endDate    DateTime
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  creator    User     @relation("ChallengeCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  id           String                       @id @default(uuid())
+  creatorId    String
+  title        String
+  targetDays   Int                          @default(5)
+  startDate    DateTime
+  endDate      DateTime
+  active       Boolean                      @default(true)
+  createdAt    DateTime                     @default(now())
+  creator      User                         @relation("ChallengeCreator", fields: [creatorId], references: [id], onDelete: Cascade)
   participants WeeklyChallengeParticipant[]
 }
 
 model WeeklyChallengeParticipant {
-  id          String   @id @default(uuid())
-  challengeId String
-  userId      String
-  progress    Int      @default(0)
+  id            String          @id @default(uuid())
+  challengeId   String
+  userId        String
+  progress      Int             @default(0)
   completedDays String?
-  joinedAt    DateTime @default(now())
-  challenge   WeeklyChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt      DateTime        @default(now())
+  challenge     WeeklyChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([challengeId, userId])
 }
@@ -182,38 +201,38 @@ model SocialPing {
 }
 
 model SocialSpark {
-  id         String   @id @default(uuid())
-  userId     String
-  content    String
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  votes      SocialSparkVote[]
-  comments   SocialSparkComment[]
+  id        String               @id @default(uuid())
+  userId    String
+  content   String
+  createdAt DateTime             @default(now())
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  votes     SocialSparkVote[]
+  comments  SocialSparkComment[]
 
   @@index([userId, createdAt])
 }
 
 model SocialSparkVote {
-  id        String   @id @default(uuid())
+  id        String      @id @default(uuid())
   sparkId   String
   userId    String
   value     Int
-  createdAt DateTime @default(now())
+  createdAt DateTime    @default(now())
   spark     SocialSpark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([sparkId, userId])
   @@index([sparkId])
 }
 
 model SocialSparkComment {
-  id        String   @id @default(uuid())
+  id        String      @id @default(uuid())
   sparkId   String
   userId    String
   content   String
-  createdAt DateTime @default(now())
+  createdAt DateTime    @default(now())
   spark     SocialSpark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([sparkId, createdAt])
 }
