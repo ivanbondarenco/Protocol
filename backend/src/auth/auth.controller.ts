@@ -25,6 +25,11 @@ const updateMeSchema = z.object({
   name: z.string().min(1).max(120).optional(),
 });
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'La contraseña actual es requerida.'),
+  newPassword: z.string().min(6, 'La nueva contraseña debe tener al menos 6 caracteres.'),
+});
+
 interface AuthRequest extends Request {
   userId?: string;
 }
@@ -178,6 +183,64 @@ export const updateMe = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Error de validacion', errors: error.errors });
     }
     console.error('Error al actualizar perfil:', error);
+    res.status(500).json({ message: 'Error interno del servidor.' });
+  }
+};
+
+export const changePassword = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ message: 'Usuario no autenticado.' });
+
+    const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado.' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'La contraseña actual es incorrecta.' });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedNewPassword },
+    });
+
+    res.status(200).json({ message: 'Contraseña actualizada con éxito.' });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: 'Error de validacion', errors: error.errors });
+    }
+    console.error('Error al cambiar contraseña:', error);
+    res.status(500).json({ message: 'Error interno del servidor.' });
+  }
+};
+
+export const deleteAccount = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ message: 'Usuario no autenticado.' });
+
+    // Validate if user exists
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado.' });
+    }
+
+    // Prisma should handle cascading based on schema or relations.
+    // If not, explicit deletions for related models need to be added here.
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    res.status(200).json({ message: 'Cuenta eliminada con éxito.' });
+  } catch (error: any) {
+    console.error('Error al eliminar cuenta:', error);
     res.status(500).json({ message: 'Error interno del servidor.' });
   }
 };

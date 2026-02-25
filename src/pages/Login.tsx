@@ -10,25 +10,17 @@ export const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
-    const [age, setAge] = useState('');
-    const [weight, setWeight] = useState('');
-    const [height, setHeight] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
     const userLogin = useAuthStore(state => state.login);
-    const { language, setLanguage, updateBioData, recalculateTargets } = useProtocolStore();
+    const { language, setLanguage } = useProtocolStore();
     const t = APP_TRANSLATIONS[language];
 
     useEffect(() => {
         document.body.className = '';
         document.body.classList.add('minimal-dark');
     }, []);
-
-    const handleNumericInput = (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string) => void) => {
-        const val = e.target.value.replace(/[^0-9]/g, '');
-        setter(val);
-    };
 
     const handleAlphaInput = (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string) => void) => {
         const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
@@ -40,7 +32,7 @@ export const Login = () => {
         setError(null);
 
         if (isRegister) {
-            if (!name || !email || !password || !age || !weight || !height) {
+            if (!name || !email || !password) {
                 setError(t.PLEASE_FILL_FIELDS);
                 return;
             }
@@ -66,14 +58,6 @@ export const Login = () => {
             }
 
             userLogin(data.token, data.user);
-            if (isRegister) {
-                updateBioData({
-                    age: parseInt(age) || 25,
-                    weight: parseFloat(weight) || 70,
-                    height: parseFloat(height) || 170
-                });
-                recalculateTargets();
-            }
             window.location.href = '/';
         } catch (err: any) {
             setError(err.message);
@@ -110,7 +94,10 @@ export const Login = () => {
                     </div>
 
                     <div className="mb-7">
-                        <p className="text-[11px] tracking-[0.16em] uppercase text-gray-500 mb-2">Protocol</p>
+                        <div className="flex items-center gap-3 mb-6">
+                            <img src="/protocol-icon.svg" alt="Protocol" className="w-12 h-12 shadow-md rounded-[12px] overflow-hidden" />
+                            <p className="text-[12px] font-bold tracking-[0.25em] uppercase text-gray-400 m-0 leading-none">Protocol</p>
+                        </div>
                         <h1 className="text-white text-[28px] leading-tight font-semibold tracking-tight">
                             {isRegister ? t.CREATE_ACCOUNT_TITLE : t.WELCOME_BACK_TITLE}
                         </h1>
@@ -135,38 +122,13 @@ export const Login = () => {
                         </AnimatePresence>
 
                         {isRegister && (
-                            <>
-                                <input
-                                    type="text"
-                                    placeholder={t.REGISTER_NAME_PH}
-                                    className="w-full h-12 rounded-xl px-4 bg-[#0e0e0e] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-white/30 mb-3"
-                                    value={name}
-                                    onChange={e => handleAlphaInput(e, setName)}
-                                />
-                                <div className="grid grid-cols-3 gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder={t.REGISTER_AGE_PH}
-                                        className="w-full h-12 rounded-xl px-4 bg-[#0e0e0e] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-white/30"
-                                        value={age}
-                                        onChange={e => handleNumericInput(e, setAge)}
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder={t.REGISTER_WEIGHT_PH}
-                                        className="w-full h-12 rounded-xl px-4 bg-[#0e0e0e] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-white/30"
-                                        value={weight}
-                                        onChange={e => handleNumericInput(e, setWeight)}
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder={t.REGISTER_HEIGHT_PH}
-                                        className="w-full h-12 rounded-xl px-4 bg-[#0e0e0e] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-white/30"
-                                        value={height}
-                                        onChange={e => handleNumericInput(e, setHeight)}
-                                    />
-                                </div>
-                            </>
+                            <input
+                                type="text"
+                                placeholder={t.REGISTER_NAME_PH}
+                                className="w-full h-12 rounded-xl px-4 bg-[#0e0e0e] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-white/30 mb-3"
+                                value={name}
+                                onChange={e => handleAlphaInput(e, setName)}
+                            />
                         )}
 
                         <input

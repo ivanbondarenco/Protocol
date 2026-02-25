@@ -398,10 +398,10 @@ export const Vault = () => {
 
             <AnimatePresence>
                 {isPomodoroOpen && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 flex items-center justify-center z-[60] p-4">
                         <motion.div
                             initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="w-full max-w-sm rounded-xl border border-white/10 bg-[#121212] p-6 mt-auto mb-4"
+                            className="w-full max-w-sm rounded-xl border border-white/10 bg-[#121212] p-6"
                         >
                             <div className="flex justify-between items-center mb-5">
                                 <h3 className="text-white font-bold uppercase tracking-wider flex items-center gap-2">
@@ -442,7 +442,7 @@ export const Vault = () => {
             {/* Book Form Modal (Add/Edit) */}
             <AnimatePresence>
                 {isBookModalOpen && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 z-50 p-6 flex items-end justify-center pb-12 backdrop-blur-sm">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 z-[60] p-6 flex items-end justify-center pb-12 backdrop-blur-sm">
                         <motion.div initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="w-full max-w-sm">
                             <NeonCard className="w-full border-white/15">
                                 <div className="flex justify-between items-center mb-6">
@@ -509,8 +509,8 @@ export const Vault = () => {
             {/* Insight Modal */}
             <AnimatePresence>
                 {isInsightModalOpen && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-                        <motion.div initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="bg-carbonblack border border-white/15 p-6 rounded-xl w-full max-w-sm mt-auto mb-4">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 flex items-center justify-center z-[60] p-4">
+                        <motion.div initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="bg-carbonblack border border-white/15 p-6 rounded-xl w-full max-w-sm">
                             <h3 className="text-white font-bold uppercase mb-4">{t.EXTRACT_INTEL}</h3>
                             <form onSubmit={handleAddInsight}>
                                 <textarea
@@ -534,7 +534,7 @@ export const Vault = () => {
                 {isIdeasModalOpen && (
                     <motion.div
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/95 z-50 p-4 flex justify-center backdrop-blur-sm pt-20 pb-10 overflow-y-auto"
+                        className="fixed inset-0 bg-black/95 z-[60] p-4 flex justify-center backdrop-blur-sm pt-20 pb-10 overflow-y-auto"
                         onClick={() => setIsIdeasModalOpen(false)}
                     >
                         <motion.div

@@ -8,10 +8,11 @@ import { getProtocolDate, getDisplayDate } from '../lib/dateUtils';
 import { addDays, format } from 'date-fns';
 import { useMemo, useState } from 'react';
 
-import { Settings, Plus, X, Globe, User, Activity, Flame } from 'lucide-react';
+import { Settings, Plus, X, Globe, User, Activity, Flame, Lock } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { APP_TRANSLATIONS } from '../data/translations';
 import { ProfileModal } from '../components/profile/ProfileModal';
+import { api } from '../lib/api';
 
 
 // Matrix Component
@@ -129,6 +130,16 @@ export const Dashboard = () => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const currentStreak = getCurrentStreak();
 
+    // Password Change State
+    const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmNewPassword, setConfirmNewPassword] = useState('');
+    const [passwordStatus, setPasswordStatus] = useState<{ type: 'error' | 'success', msg: string } | null>(null);
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+    // Delete Account State
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
     const handleDelete = (id: string) => {
         if (window.confirm(t.DELETE_CONFIRM)) {
@@ -176,7 +187,59 @@ export const Dashboard = () => {
         toggleHabit(id);
     };
 
+    const handleChangePassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setPasswordStatus(null);
 
+        if (!currentPassword || !newPassword || !confirmNewPassword) {
+            setPasswordStatus({ type: 'error', msg: 'Todos los campos son obligatorios.' });
+            return;
+        }
+
+        if (newPassword !== confirmNewPassword) {
+            setPasswordStatus({ type: 'error', msg: 'Las nuevas contraseñas no coinciden.' });
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            setPasswordStatus({ type: 'error', msg: 'La nueva contraseña debe tener al menos 6 caracteres.' });
+            return;
+        }
+
+        setIsChangingPassword(true);
+        try {
+            const res = await api.put('/auth/password', { currentPassword, newPassword });
+            setPasswordStatus({ type: 'success', msg: res.message || 'Contraseña actualizada con éxito.' });
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmNewPassword('');
+            setTimeout(() => {
+                setIsChangePasswordOpen(false);
+                setPasswordStatus(null);
+            }, 2000);
+        } catch (error: any) {
+            setPasswordStatus({ type: 'error', msg: error.message || 'Error al cambiar la contraseña.' });
+        } finally {
+            setIsChangingPassword(false);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        const confirm1 = window.confirm("¿Estás seguro de solicitar la eliminación de tu cuenta?");
+        if (!confirm1) return;
+        const confirm2 = window.confirm("¡ATENCIÓN! Esta acción es irreversible y se perderán todos tus datos. ¿Deseas continuar y eliminar la cuenta definitivamente?");
+        if (!confirm2) return;
+
+        setIsDeletingAccount(true);
+        try {
+            await api.delete('/auth/me');
+            useAuthStore.getState().logout();
+            window.location.reload();
+        } catch (error: any) {
+            alert(error.message || 'Error al eliminar la cuenta.');
+            setIsDeletingAccount(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-voidblack pb-32 px-5 pt-8 max-w-md mx-auto relative transition-colors duration-300">
@@ -441,18 +504,111 @@ export const Dashboard = () => {
                                 </div>
                             </div>
 
+                            {/* Account Management & Security */}
+                            <div className="border-t border-white/10 pt-6 mt-6 space-y-3">
+                                <h4 className="text-xs text-gray-500 uppercase mb-3 flex items-center gap-2">
+                                    <User size={14} /> Seguridad de Cuenta
+                                </h4>
+                                <button
+                                    onClick={() => {
+                                        setIsSettingsOpen(false);
+                                        setIsChangePasswordOpen(true);
+                                    }}
+                                    className="w-full py-3 bg-white/5 text-gray-300 border border-white/10 hover:border-white/30 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest rounded-xl"
+                                >
+                                    {t.CHANGE_PASSWORD}
+                                </button>
+                                <button
+                                    onClick={handleDeleteAccount}
+                                    disabled={isDeletingAccount}
+                                    className={`w-full py-3 text-red-500 border border-red-500/20 text-xs font-bold uppercase tracking-widest rounded-xl transition-colors ${isDeletingAccount ? 'bg-red-900/5 cursor-not-allowed opacity-50' : 'bg-red-900/10 hover:bg-red-900/40'}`}
+                                >
+                                    {isDeletingAccount ? 'Eliminando...' : t.DELETE_ACCOUNT}
+                                </button>
+                            </div>
+
                             {/* Logout */}
-                            <div className="border-t border-white/10 pt-4">
+                            <div className="border-t border-white/10 pt-6 mt-6">
                                 <button
                                     onClick={() => {
                                         useAuthStore.getState().logout();
                                         window.location.reload();
                                     }}
-                                    className="w-full py-3 bg-red-900/30 text-red-500 border border-red-500/50 hover:bg-red-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest"
+                                    className="w-full py-3 bg-red-900/30 text-red-500 border border-red-500/50 hover:bg-red-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest rounded-xl"
                                 >
                                     {t.LOGOUT}
                                 </button>
                             </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Change Password Modal */}
+            <AnimatePresence>
+                {isChangePasswordOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/90 flex items-center justify-center z-[60] p-4"
+                    >
+                        <motion.div
+                            initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="bg-[#171719] border border-white/15 p-6 rounded-2xl w-full max-w-sm"
+                        >
+                            <div className="flex justify-between mb-6">
+                                <h3 className="text-white font-bold uppercase flex items-center gap-2">
+                                    <Lock size={16} /> {t.CHANGE_PASSWORD}
+                                </h3>
+                                <button onClick={() => {
+                                    setIsChangePasswordOpen(false);
+                                    setPasswordStatus(null);
+                                    setCurrentPassword('');
+                                    setNewPassword('');
+                                    setConfirmNewPassword('');
+                                }}><X className="text-gray-500 hover:text-white" /></button>
+                            </div>
+
+                            <form onSubmit={handleChangePassword} className="space-y-4">
+                                {passwordStatus && (
+                                    <div className={`p-3 rounded-lg text-xs font-medium text-center ${passwordStatus.type === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                                        {passwordStatus.msg}
+                                    </div>
+                                )}
+                                <div>
+                                    <label className="text-xs text-gray-500 uppercase block mb-1">Contraseña Actual</label>
+                                    <input
+                                        type="password"
+                                        className="w-full rounded-xl bg-black/50 border border-white/10 p-3 text-white outline-none focus:border-white/40"
+                                        value={currentPassword} onChange={e => setCurrentPassword(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-500 uppercase block mb-1">Nueva Contraseña</label>
+                                    <input
+                                        type="password"
+                                        className="w-full rounded-xl bg-black/50 border border-white/10 p-3 text-white outline-none focus:border-white/40"
+                                        value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-500 uppercase block mb-1">Confirmar Nueva Contraseña</label>
+                                    <input
+                                        type="password"
+                                        className="w-full rounded-xl bg-black/50 border border-white/10 p-3 text-white outline-none focus:border-white/40"
+                                        value={confirmNewPassword} onChange={e => setConfirmNewPassword(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={isChangingPassword}
+                                    className={`w-full rounded-xl bg-white text-black font-bold py-3 uppercase text-xs tracking-widest transition-colors mt-6 ${isChangingPassword ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}`}
+                                >
+                                    {isChangingPassword ? 'Actualizando...' : 'Actualizar Contraseña'}
+                                </button>
+                            </form>
                         </motion.div>
                     </motion.div>
                 )}

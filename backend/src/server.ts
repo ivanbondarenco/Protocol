@@ -9,6 +9,7 @@ import onboardingRoutes from './onboarding/onboarding.routes';
 import insightsRoutes from './insights/insights.routes';
 import uploadRoutes from './upload/upload.routes';
 import exercisesRoutes from './exercises/exercises.routes';
+import vaultRoutes from './vault/vault.routes';
 import path from 'path';
 import { authenticateToken } from './auth/auth.middleware';
 
@@ -27,6 +28,7 @@ app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/insights', insightsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/exercises', exercisesRoutes);
+app.use('/api/vault', vaultRoutes);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.get('/api/saludo-protegido', authenticateToken, (req, res) => {
