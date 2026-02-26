@@ -58,7 +58,7 @@ export const Login = () => {
             }
 
             userLogin(data.token, data.user);
-            window.location.href = '/';
+            window.location.href = import.meta.env.BASE_URL || '/';
         } catch (err: any) {
             setError(err.message);
         } finally {

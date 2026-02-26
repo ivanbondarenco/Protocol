@@ -16,8 +16,8 @@ const forceLogoutOnAuthFailure = (status: number, rawText: string) => {
     if (!looksLikeTokenIssue) return;
 
     useAuthStore.getState().logout();
-    if (typeof window !== 'undefined' && window.location.pathname !== '/') {
-        window.location.href = '/';
+    if (typeof window !== 'undefined' && window.location.pathname !== import.meta.env.BASE_URL) {
+        window.location.href = import.meta.env.BASE_URL || '/';
     }
 };
 
