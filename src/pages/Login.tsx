@@ -40,7 +40,7 @@ export const Login = () => {
 
         setLoading(true);
 
-        const BASE_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'http://localhost:4000/api';
+        const BASE_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'http://localhost:3000/api';
         const endpoint = isRegister
             ? `${BASE_URL}/auth/register`
             : `${BASE_URL}/auth/login`;

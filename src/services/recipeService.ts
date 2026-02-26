@@ -19,7 +19,7 @@ export const checkApiConfig = (): boolean => {
 export const searchRecipes = async (query: string): Promise<{ recipes: Recipe[], nextHref: string | null }> => {
     if (!query) return { recipes: [], nextHref: null };
 
-    const BASE_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'http://localhost:4000/api';
+    const BASE_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'http://localhost:3000/api';
     const endpoint = `${BASE_URL}/recipes?q=${encodeURIComponent(query)}`;
 
     try {

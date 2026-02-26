@@ -8,8 +8,8 @@ cmds = ["npm install --legacy-peer-deps --no-fund --no-audit --ignore-engines --
 cmds = [
   "npm run build",
   "mkdir -p out/protocol",
+  "cp -r dist/* out/",
   "cp -r dist/* out/protocol/",
-  "cp dist/index.html out/index.html"
 ]
 
 [start]

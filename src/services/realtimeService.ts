@@ -8,7 +8,7 @@ export const getRealtimeSocket = () => {
     const token = useAuthStore.getState().token;
     if (!token) return null;
 
-    const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     socket = io(SOCKET_URL, {
         auth: { token },
         transports: ['websocket'],
