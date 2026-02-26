@@ -5,7 +5,12 @@ nixPkgs = ["nodejs_20", "npm-9_x"]
 cmds = ["npm install --legacy-peer-deps --no-fund --no-audit --ignore-engines --ignore-scripts"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = [
+  "npm run build",
+  "mkdir -p out/protocol",
+  "cp -r dist/* out/protocol/",
+  "cp dist/index.html out/index.html"
+]
 
 [start]
-cmd = "npx serve dist -s -l $PORT"
+cmd = "npx serve out -s -l $PORT"
